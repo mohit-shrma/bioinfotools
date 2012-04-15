@@ -1,0 +1,7 @@
+#ignore temprary emacs file
+*~
+#ignore class files
+*.class
+*.classpath
+*.project
+*.settings*
