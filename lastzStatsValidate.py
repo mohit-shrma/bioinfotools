@@ -1,5 +1,6 @@
 import sys
-""" validate whether lastz output for X vs Y and Y vs X are same or mutual correspondence"""
+""" validate whether lastz output for X vs Y and Y vs X are same or mutual
+correspondence"""
 
 
 def createDict(fileName):
