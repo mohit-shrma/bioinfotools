@@ -221,9 +221,10 @@ class RedBlackMain {
 		String opFileName = "";
 		
 		//parse commandline arguments
-		if (args.length > 3) {
-			dirName = args[1];
-			opFileName = args[2];
+		if (args.length > 1) {
+			dirName = args[0];
+			opFileName = args[1];
+			obj.processDir(dirName, opFileName);
 		} else {
 			//not sufficient argument passed
 			System.out.println("missing either input directory or output file");
@@ -231,7 +232,7 @@ class RedBlackMain {
 
 		//obj.processDir("/Users/mohit/Documents/spring12/hugroup/koronis/2012Apr9500RefBGIQueryNCGR/", 
 		//				"/Users/mohit/Documents/spring12/hugroup/bgicompstats/bgiRefNCGRQuery.txt");
-		obj.processDir(dirName, opFileName);
+		
 	}
 	
 }
