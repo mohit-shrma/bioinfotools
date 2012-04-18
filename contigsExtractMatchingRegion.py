@@ -10,8 +10,6 @@ def extractMatchedRegion(matchingDict, contigsFastaFileName, opFileName):
     try:
         contigsFile = open(contigsFastaFileName, 'r')
         opFile = open(opFileName, 'w')
-        startKey = 'start'
-        endKey = 'end'
         line=contigsFile.readline()
         while line:
             if line.startswith('>'):
@@ -20,8 +18,8 @@ def extractMatchedRegion(matchingDict, contigsFastaFileName, opFileName):
                 if header in matchingDict:
                     #current contig one of matching contig
                     #extract the matching region from it
-                    start = int(matchingDict[header][startKey]) - 1
-                    end = int(matchingDict[header][endKey]) - 1
+                    start = matchingDict[header][0] - 1
+                    end = matchingDict[header][1] - 1
                     if end < start:
                         #contigs matching in reverse direction
                         start, end = end, start
@@ -50,8 +48,6 @@ def createMatchingDict(matchFileName):
     headerColNo = 1 -1 #-1 as zero based indexing
     startColNo = 2 -1
     endColNo = 3 -1
-    startKey = 'start'
-    endKey = 'end'
     try:
         matchFile = open(matchFileName, 'r')
         header = matchFile.readline()
@@ -60,7 +56,7 @@ def createMatchingDict(matchFileName):
             header = columns[headerColNo]
             start = columns[startColNo]
             end = columns[endColNo]
-            matchingDict[header] = {startKey:start, endKey:end}
+            matchingDict[header] = [int(start), int(end)]
         matchFile.close()
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
@@ -119,10 +115,12 @@ def doBatchExtraction(matchFileName, contigsFileName, opFileName):
             header = columns[headerColNo]
             start = columns[startColNo]
             end = columns[endColNo]
-            matchingDict[header] = {[int(start), int(end)]}
+            matchingDict[header] = [int(start), int(end)]
             if len(matchingDict) >= batchLength:
                 #process these batch and empty the dict
-                somethingTODO = ''
+                batchExtractMatchingRegion(matchingDict, contigsFileName, opFile)
+                #empty the dict
+                matchingDict = {}
         matchFile.close()
         opFileName.close()
     except IOError as (errno, strerror):
