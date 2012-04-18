@@ -16,7 +16,7 @@ def extractMatchedRegion(matchingDict, contigsFastaFileName, opFileName):
         while line:
             if line.startswith('>'):
                 #detected header
-                header = line.lstrip('>').rstrip('\n')
+                header = line.lstrip('>').rstrip('\n').split()[0]
                 if header in matchingDict:
                     #current contig one of matching contig
                     #extract the matching region from it
