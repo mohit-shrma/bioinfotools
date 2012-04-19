@@ -17,19 +17,20 @@ def extractMatchedRegion(matchingDict, contigsFastaFileName, opFileName):
                 header = line.lstrip('>').rstrip('\n').split()[0]
                 if header in matchingDict:
                     #current contig one of matching contig
-                    #extract the matching region from it
-                    start = matchingDict[header][0] - 1
-                    end = matchingDict[header][1] - 1
-                    if end < start:
-                        #contigs matching in reverse direction
-                        start, end = end, start
+                    #extract the matching regions from it
                     contigs = contigsFile.readline().rstrip('\n')
-                    matched = contigs[start:end+1]
-                    opFile.write('>')
-                    opFile.write(header)
-                    opFile.write('\n')
-                    opFile.write(matched)
-                    opFile.write('\n')                    
+                    for tempRange in matchingDict[header]:
+                        start = tempRange[0] - 1
+                        end = tempRange[1] - 1
+                        if end < start: 
+                            #contigs matching in reverse direction
+                            start, end = end, start
+                        matched = contigs[start:end+1]
+                        opFile.write('>')
+                        opFile.write(header+'_'+str(start+1)+'_'+str(end+1))
+                        opFile.write('\n')
+                        opFile.write(matched)
+                        opFile.write('\n')                    
                     #don't need this key, can delete it
                     del matchingDict[header]
                     if len(matchingDict) == 0:
@@ -41,6 +42,78 @@ def extractMatchedRegion(matchingDict, contigsFastaFileName, opFileName):
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
 
+"""will check if any conflict among ranges"""
+def isConflict(range1, range2):
+    range1Start = range1[0]
+    range1End =  range1[1]
+    range2Start = range2[0]
+    range2End = range2[1]
+    if (range1Start >= range2Start and range1Start < range2End)\
+                or (range1End > range2Start and range1End <= range2End)\
+                or (range1Start <= range2Start and range1End >= range2End)\
+                or (range2Start <= range1Start and range2End >= range1End):
+        return True
+    else:
+        return False
+
+
+""" will merge two conflicted ranges"""
+def mergeRanges(range1, range2):
+    if (isConflict(range1, range2)):
+        range1Start = range1[0]
+        range1End =  range1[1]
+        range2Start = range2[0]
+        range2End = range2[1]
+        if range1Start < range2Start:
+            newStart = range1Start
+        else:
+            newStart = range2Start
+            
+        if range1End > range2End:
+            newEnd = range1End
+        else:
+            newEnd = range2End
+        return [newStart, newEnd]
+    else:
+        return []
+
+
+""" check if query range is in conflict with range list and
+return the merged one in that case"""
+def checkAndMergeRange(rangeList, queryRange):
+    conflicted = False
+    for i in range(len(rangeList)):
+        tempRange = rangeList[i]
+        if (isConflict(queryRange, tempRange)):
+            #conflict and need to be merged
+            conflicted = True
+            newRange = mergeRanges(queryRange, tempRange)
+            #replace the current range
+            rangeList[i] = newRange
+            break
+    if not conflicted:
+        rangeList.append(queryRange)
+        rangeList.sort()
+    else:
+        #conflicted, make sure full list is out of conflict
+        rangeList.sort()
+        for i in range(len(rangeList)-1):
+            rangePrev = rangeList[i]
+            rangeCurr = rangeList[i+1]
+            if isConflict(rangePrev, rangeCurr):
+                mergedRange = mergeRanges(rangePrev, rangeCurr)
+                if len(mergedRange) > 0:
+                    rangeList[i] = []
+                    rangeList[i+1] = mergedRange
+        #clear the empty ranges
+        retList = []
+        for tempRange in rangeList:
+            if len(tempRange) > 0:
+                retList.append(tempRange)
+        rangeList = retList
+    return rangeList
+            
+        
 
 """ returns a matching dictionary containg positions of all matched regions"""
 def createMatchingDict(matchFileName):
@@ -52,79 +125,27 @@ def createMatchingDict(matchFileName):
         matchFile = open(matchFileName, 'r')
         header = matchFile.readline()
         for line in matchFile:
-            columns = line.split()
-            header = columns[headerColNo]
-            start = columns[startColNo]
-            end = columns[endColNo]
-            matchingDict[header] = [int(start), int(end)]
+            line = line.rstrip('\n')
+            if line:
+                columns = line.split()
+                header = columns[headerColNo]
+                start = int(columns[startColNo])
+                end = int(columns[endColNo])
+                if end < start:
+                    start, end = end, start
+                if header in matchingDict:
+                    #if already existing then append the new range in
+                    #dict
+                    #check for conflict and merge if any conflict
+                    matchingDict[header] = checkAndMergeRange(\
+                        matchingDict[header],\
+                            [start, end])
+                else:
+                    matchingDict[header] = [[start, end]]
         matchFile.close()
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
     return matchingDict
-
-def batchExtractMatchingRegion(matchingDict, contigsFileName, opFile):
-    try:
-        contigsFile = open(contigsFastaFileName, 'r')
-        line=contigsFile.readline()
-        while line:
-            if line.startswith('>'):
-                #detected header
-                header = line.lstrip('>').rstrip('\n').split()[0]
-                if header in matchingDict:
-                    #current contig one of matching contig
-                    #extract the matching region from it
-                    start = matchingDict[header][0]
-                    end = matchingDict[header][1]
-                    if end < start:
-                        #contigs matching in reverse direction
-                        start, end = end, start
-                    contigs = contigsFile.readline().rstrip('\n')
-                    matched = contigs[start:end+1]
-                    opFile.write('>')
-                    opFile.write(header)
-                    opFile.write('\n')
-                    opFile.write(matched)
-                    opFile.write('\n')
-                    opFile.flush()
-                    #don't need this key, can delete it
-                    del matchingDict[header]
-                    if len(matchingDict) == 0:
-                        #all the batch is processed exit the loop
-                        break
-            line = contigsFile.readline()
-        contigsFile.close()
-    except IOError as (errno, strerror):
-        print "I/O error({0}): {1}".format(errno, strerror)
-
-
-
-""" huge file so lets do batch extraction"""
-def doBatchExtraction(matchFileName, contigsFileName, opFileName):
-    matchingDict = {}
-    headerColNo = 1 -1 #-1 as zero based indexing
-    startColNo = 2 -1
-    endColNo = 3 -1
-    #size of dict to be created at one time and send fwd for processing
-    batchLength = 1000 
-    try:
-        matchFile = open(matchFileName, 'r')
-        opFile = open(opFileName, 'w')
-        header = matchFile.readline()
-        for line in matchFile:
-            columns = line.split()
-            header = columns[headerColNo]
-            start = columns[startColNo]
-            end = columns[endColNo]
-            matchingDict[header] = [int(start), int(end)]
-            if len(matchingDict) >= batchLength:
-                #process these batch and empty the dict
-                batchExtractMatchingRegion(matchingDict, contigsFileName, opFile)
-                #empty the dict
-                matchingDict = {}
-        matchFile.close()
-        opFileName.close()
-    except IOError as (errno, strerror):
-        print "I/O error({0}): {1}".format(errno, strerror)
 
 
 def main():
