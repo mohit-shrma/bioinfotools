@@ -5,10 +5,10 @@ import sys
 def getBgiScaffoldChromDict(dictFileName):
     scaffNameCol = 1 - 1
     chromCol = 2 - 1
+    chromDict = {}
     try:
         dictFile = open(dictFileName, 'r')
         header = dictFile.readline()
-        chromDict = {}
         for line in dictFile:
             line = line.rstrip('\n').split()
             scaffName = line[scaffNameCol]
