@@ -88,31 +88,90 @@ public class LastzOutputParser {
 		}
 	}
 	
-	private HashMap<String, Integer> getInorderLengthWalk() {
-		HashMap<String, Integer> hMap = new HashMap<String, Integer>(10); 
+	//TODO: cleanup code below bad hard code
+	private HashMap<String, Vector> getInorderLengthWalk() {
+		HashMap<String, Vector> hMap = new HashMap<String, Vector>(10); 
 		Vector<IntervalNode> nodeStack = new Vector<IntervalNode>();
 		intervalTree.inOrderWalk(intervalTree.getRoot(), 
 									nodeStack);
-		int matchedLength = -1;
+		int matchLenTillNow = -1, matchedLength = -1, lo = -1, hi = -1;
 		String scaffName = "";
+		Vector loHiMatchLen = null;
 		for (IntervalNode intervalNode: nodeStack) {
 			matchedLength = intervalNode.getHigh()-intervalNode.getLow();
 			scaffName = intervalNode.getScaffName();
+			
 			if (hMap.containsKey(scaffName)) {
-				hMap.put(scaffName, hMap.get(scaffName) + matchedLength);
+				//Vector loHiMatchLen = new Vector(3);
+				loHiMatchLen = hMap.get(scaffName);
+				lo = (Integer) loHiMatchLen.elementAt(0);
+				hi = (Integer) loHiMatchLen.elementAt(1);
+				matchLenTillNow = (Integer) loHiMatchLen.elementAt(2);
+				
+				//check for overlap
+				if (!(lo > intervalNode.getHigh() || 
+						hi < intervalNode.getLow())) {
+					System.out.println("ovr lap");
+					if (intervalNode.getLow() >= lo && 
+							intervalNode.getLow() <= hi) {
+						//if new low is between
+						matchedLength = intervalNode.getHigh() - hi;
+						if (matchedLength > 0) {
+							matchLenTillNow += matchedLength;
+							hi = intervalNode.getHigh();
+						}
+					}else if (intervalNode.getHigh() <= hi &&
+								intervalNode.getHigh() >= lo) {
+						//if new high is between
+						System.out.println("hi");
+						matchedLength = lo - intervalNode.getLow();
+						if (matchedLength > 0) {
+							matchLenTillNow += matchedLength;
+							lo = intervalNode.getLow();
+						}
+					} else if (intervalNode.getLow() < lo 
+							&& intervalNode.getHigh() > hi) {
+						//newlo < lo and newhi > hi
+						System.out.println("b/w");
+						matchLenTillNow = intervalNode.getHigh() - 
+												intervalNode.getLow();
+						lo = intervalNode.getLow();
+						hi = intervalNode.getHigh();
+					} else {
+						System.out.println("err");
+					}
+				} else {
+					//no overlap
+					matchedLength = intervalNode.getHigh() - 
+											intervalNode.getLow();
+					lo = intervalNode.getLow()<lo?intervalNode.getLow():lo;
+					hi = intervalNode.getHigh()>hi?intervalNode.getHigh():hi;
+					matchLenTillNow += matchedLength;
+				}
+				loHiMatchLen.setElementAt(lo, 0);
+				loHiMatchLen.setElementAt(hi, 1);
+				loHiMatchLen.setElementAt(matchLenTillNow, 2);
+				hMap.put(scaffName, loHiMatchLen);
 			} else {
-				hMap.put(scaffName,matchedLength);
+				lo = intervalNode.getLow();
+				hi = intervalNode.getHigh();
+				matchLenTillNow = hi - lo;
+				loHiMatchLen = new Vector(3);
+				loHiMatchLen.add(0, lo);
+				loHiMatchLen.add(1, hi);
+				loHiMatchLen.add(2, matchLenTillNow);
+				hMap.put(scaffName, loHiMatchLen);
 			}
 		}
 		return hMap;
 	}
 	
 	public String getMatchedLength() {
-		HashMap<String, Integer> hMap = getInorderLengthWalk();
+		HashMap<String, Vector> hMap = getInorderLengthWalk();
 		String str = "";
 		StringBuffer strBuff = new StringBuffer();
 		for (String scaffName : hMap.keySet()) {
-			int matchLen = hMap.get(scaffName);
+			int matchLen = (Integer) hMap.get(scaffName).elementAt(2);
 			strBuff.append(scaffName+":"+matchLen+","); 
 		}
 		str = strBuff.toString();
