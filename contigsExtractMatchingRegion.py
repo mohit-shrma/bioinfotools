@@ -48,13 +48,10 @@ def isConflict(range1, range2):
     range1End =  range1[1]
     range2Start = range2[0]
     range2End = range2[1]
-    if (range1Start >= range2Start and range1Start < range2End)\
-                or (range1End > range2Start and range1End <= range2End)\
-                or (range1Start <= range2Start and range1End >= range2End)\
-                or (range2Start <= range1Start and range2End >= range1End):
-        return True
-    else:
+    if (range1End < range2Start or range1Start > range2End):
         return False
+    else:
+        return True
 
 
 """ will merge two conflicted ranges"""

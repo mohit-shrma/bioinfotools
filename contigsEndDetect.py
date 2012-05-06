@@ -2,7 +2,8 @@ import sys
 
 """from mummer output based on start and end pts, identify the contigs that
 overlapped at end append 'S/E/SF/EF' if yes and '0' other wise"""
-
+""" takes input file without headers,
+i.e data starts right from the first ine of file"""
 
 def detectIfEndAlign(ipFileName, outFileName):
     #matched start and end columns of query and reference
