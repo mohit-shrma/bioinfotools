@@ -3,6 +3,7 @@ package com.lastzout;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Vector;
 
 import au.com.bytecode.opencsv.CSVReader;
@@ -14,6 +15,7 @@ public class LastzOutputParser {
 	
 	private IntervalTree intervalTree;
 	private Vector<String> scaffoldNames;
+	private Vector<String> scaffoldNamesStrength;
 	private String fileName;
 	private int startCol;
 	private int endCol;
@@ -76,6 +78,50 @@ public class LastzOutputParser {
 		}
 	}
 	
+	public void printInorderLengthWalk() {
+		Vector<IntervalNode> nodeStack = new Vector<IntervalNode>();
+		intervalTree.inOrderWalk((IntervalNode) intervalTree.getRoot(), 
+									nodeStack);
+		for (IntervalNode intervalNode: nodeStack) {
+			System.out.println(intervalNode.getScaffName() + ":" + 
+								(intervalNode.getHigh()-intervalNode.getLow()));
+		}
+	}
+	
+	private HashMap<String, Integer> getInorderLengthWalk() {
+		HashMap<String, Integer> hMap = new HashMap<String, Integer>(10); 
+		Vector<IntervalNode> nodeStack = new Vector<IntervalNode>();
+		intervalTree.inOrderWalk(intervalTree.getRoot(), 
+									nodeStack);
+		int matchedLength = -1;
+		String scaffName = "";
+		for (IntervalNode intervalNode: nodeStack) {
+			matchedLength = intervalNode.getHigh()-intervalNode.getLow();
+			scaffName = intervalNode.getScaffName();
+			if (hMap.containsKey(scaffName)) {
+				hMap.put(scaffName, hMap.get(scaffName) + matchedLength);
+			} else {
+				hMap.put(scaffName,matchedLength);
+			}
+		}
+		return hMap;
+	}
+	
+	public String getMatchedLength() {
+		HashMap<String, Integer> hMap = getInorderLengthWalk();
+		String str = "";
+		StringBuffer strBuff = new StringBuffer();
+		for (String scaffName : hMap.keySet()) {
+			int matchLen = hMap.get(scaffName);
+			strBuff.append(scaffName+":"+matchLen+","); 
+		}
+		str = strBuff.toString();
+		if (str.endsWith(",")) {
+			str = str.substring(0, str.length()-1);
+		}
+		return str;
+	}
+	
 	//TODO
 	public int countGaps() {
 		int gapCount = intervalTree.countGaps(0, sizeScaffold);
@@ -89,6 +135,7 @@ public class LastzOutputParser {
 	public int getReferenceScaffoldSize() {
 		return sizeScaffold;
 	}
+	
 	
 	
 }

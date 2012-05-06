@@ -107,7 +107,7 @@ class RedBlackMain {
 		}
 		
 		try {
-			bos.write(("Name\tSize\tGaps\tNumScaff\tScaffolds\tPcMapped\n").getBytes());
+			bos.write(("Name\tSize\tGaps\tNumScaff\tScaffolds\tPcMapped\tmacthedLen\n").getBytes());
 		} catch (IOException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
@@ -119,6 +119,7 @@ class RedBlackMain {
 		String mappedPc ="";
 		String numScaffolds = "";
 		String scaffoldsName = "";
+		String matchedLen = "";
 		
 		for (File file : files) {
 			if (file.getAbsolutePath().endsWith("fasta.out")) {
@@ -148,9 +149,11 @@ class RedBlackMain {
 						scaffoldsName += scaffold;
 					}
 					
+					matchedLen = lastzOutputParser.getMatchedLength();
+					
 					bos.write((tempName+"\t"+size+"\t"+countgaps+"\t"+
 								numScaffolds+"\t"+scaffoldsName+"\t"+
-								mappedPc+"\n").getBytes());
+								mappedPc+"\t"+matchedLen+"\n").getBytes());
 					bos.flush();
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
