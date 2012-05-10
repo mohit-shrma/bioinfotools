@@ -113,8 +113,41 @@ def mapChrom(chromDict, cgsMatchInfoDict):
     cgsScaffsChromInfoSorted = sorted(cgsScaffsChromInfo, \
                                           key=lambda chromInfo: int(chromInfo[0][3:]))
     for chromInfo in cgsScaffsChromInfoSorted:
-        print chromInfo
+        #print chromInfo
+        pass
     return cgsScaffsChromInfoSorted
+
+
+def getUniqueChromFreq(cgsChromInfoSorted):
+    chromFreqMap = {}
+    for chromInfo in cgsChromInfoSorted:
+        if len(chromInfo[1]) == 1:
+            #unique match found
+            chrom = chromInfo[1][0][0]
+            if chrom in chromFreqMap:
+                chromFreqMap[chrom] += 1
+            else:
+                chromFreqMap[chrom] = 1
+    print chromFreqMap
+    return chromFreqMap
+
+#filter out chromosomes matching length < passed threshold
+def filterWeakChromosomes(cgsChromInfoSorted, lenThreshold=20000):
+    #filter out the chromosomes with lesser mapping info
+    filteredCGSChromInfo = []
+    for chromInfo in cgsChromInfoSorted:
+        #get scaffold name
+        strChrom = chromInfo[0] +'\t'
+        filteredTuple = (chromInfo[0], [])
+        for (chrom, chromLen) in chromInfo[1]:
+            if chromLen < lenThreshold:
+                break
+            strChrom += str(chrom) + ':' + str(chromLen) + '\t'
+            filteredTuple[1].append((chrom, chromLen))
+        filteredCGSChromInfo.append(filteredTuple)
+        strChrom.rstrip('\t')
+        print strChrom
+    return filteredCGSChromInfo
 
 #compute avg. chromosome size for the passed number of rows, other wise for all rows
 def computeAvgChromosomalSize(cgsScaffsChromInfo, numRows=0):
@@ -131,6 +164,8 @@ def computeAvgChromosomalSize(cgsScaffsChromInfo, numRows=0):
     print chromLenVec
     print chromAvgVec
 
+
+    
 def main():
     if len(sys.argv) >= 4:
         bgiScaffLenFile = sys.argv[1]
@@ -140,8 +175,10 @@ def main():
         bgiNameLenDict = getBgiScaffDict(bgiScaffLenFile)
         cgsMatchInfo = bgiStrengthInCgs(cgsScaffFile, orderByPc, bgiNameLenDict)
         bgiChromDict = getBgiScaffoldChromDict(bgiScaffoldDictFileName)
-        cgiScaffsChromInfo = mapChrom(bgiChromDict, cgsMatchInfo)
-        computeAvgChromosomalSize(cgiScaffsChromInfo)
+        cgsScaffsChromInfo = mapChrom(bgiChromDict, cgsMatchInfo)
+        computeAvgChromosomalSize(cgsScaffsChromInfo)
+        filteredChromInfo = filterWeakChromosomes(cgsScaffsChromInfo)
+        chromFreq = getUniqueChromFreq(filteredChromInfo)
     else:
         print 'err: files missing'
 
