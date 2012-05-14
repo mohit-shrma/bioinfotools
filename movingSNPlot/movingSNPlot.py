@@ -24,6 +24,13 @@ def genSNPsHitFreq(snpSIndx, intervalLength, totLength):
 
     return intvHits
 
+def getSNPsHitFreqStep(snpSIndx, intervalLength, totLength):
+    #create an array of zeros of passed length
+    intvHits = zeros(totLength)
+    for snpInd in snpSIndx:
+       pass 
+
+
 def doPlot(intvHits, totalLength):
     x = arange(totalLength)
     y = intvHits
