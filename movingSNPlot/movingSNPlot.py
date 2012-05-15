@@ -24,13 +24,38 @@ def genSNPsHitFreq(snpSIndx, intervalLength, totLength):
 
     return intvHits
 
-def getSNPsHitFreqStep(snpSIndx, intervalLength, totLength):
+def genSNPsHitFreqStep(snpSIndx, intervalLength, totLength, stepSize):
     #create an array of zeros of passed length
     intvHits = zeros(totLength)
+    snpSIndxSet = set(snpSIndx)
     for snpInd in snpSIndx:
-       pass 
+       
+       low = snpInd - intervalLength + 1
+       hi = snpInd + intervalLength - 1
+       if low < 0:
+           low = 0
+       if hi > totLength - 1:
+           hi = totLength - 1
+       print snpInd, low, hi
 
-
+       #in interval low to high move and count
+       #find a valid start point, its modulo step size
+       if low == 0 or low % stepSize == 0:
+           vStart = low
+       else:
+           vStart = (low + stepSize) - ((low + stepSize)%stepSize)
+       #assign freq in intervals from valid start point
+       for start in range(vStart, hi+1, stepSize):
+           #intervals are from start -> + intervLen - 1
+           print start, (start + intervalLength - 1)
+           tempList = range(start, (start + intervalLength - 1) + 1)
+           intersection = set(tempList) & snpSIndxSet
+           if len(intersection) > 0:
+               for i in tempList:
+                   if intvHits[i] < len(intersection):
+                       intvHits[i] = len(intersection)
+    return intvHits
+           
 def doPlot(intvHits, totalLength):
     x = arange(totalLength)
     y = intvHits
@@ -44,6 +69,8 @@ def main():
     snpsIndx = [2, 4, 5, 10, 15,18,19, 25]
     intvHits = genSNPsHitFreq(snpsIndx, 4, 50)
     print snpsIndx
+    print intvHits
+    intvHits = genSNPsHitFreqStep(snpsIndx, 4, 50, 3)
     print intvHits
     doPlot(intvHits, 50)
     
