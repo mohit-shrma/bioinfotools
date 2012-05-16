@@ -1,22 +1,31 @@
 #!/bin/bash
+#need to passed output directory
 
 #reads directory
-READS_DIR=""
+READS_DIR="/project/huws/huwsgroup/CHO_K1_BGI"
 
 #read libraries
-READS_ARR=(some)
+READS_ARR=(`seq 329939 329942`)
 READS_EXT=".lite.sra"
+READS_PREFIX="SRR"
 
 #scaffolds directory, contains directory by name of scaffold inside
-SCAFF_DIR=""
+#this is passed as second commandline argument
+SCAFF_DIR=$2
+# failsafe - fall back to current directory
+[ "$SCAFF_DIR" == "" ] && SCAFF_DIR="."
 
 #scaffolds array, each present in above dir
 #http://tldp.org/LDP/Bash-Beginners-Guide/html/sect_10_02.html
-SCAFF_ARR=(some)
+SCAFF_ARR=(CGS00043 CGS00054 JH000089 JH000092)
 SCAFF_EXT=".fasta"
 
-#out directory
-OUT_DIR=""
+#out directory, passwd as first commandline argument
+OUT_DIR=$1
+
+# failsafe - fall back to current directory
+[ "$OUT_DIR" == "" ] && OUT_DIR="."
+
 
 #fastq extension
 FASTQ_EXT=".fastq"
@@ -26,7 +35,6 @@ SAI_EXT=".sai"
 
 #sam extension
 SAM_EXT=".sam"
-
 
 #unique sam extension
 UNIQ_SAM_EXT="_Unique.sam"
@@ -48,14 +56,26 @@ VARSCAN_JAR="/project/huws/huwsgroup/mohit/varscan/VarScan.v2.2.10.jar"
 
 #for each read create fastq's and process
 for sra in ${READS_ARR[@]} do
+
+  #appends prefix "SRR"
+  sra=$READS_PREFIX$sra
+
   #generate fastq for this sra in out dir
   $FASTQDUMP_CMD -A $sra -O $OUT_DIR $READS_DIR"/"$sra$READS_EXT
+  echo "fastq generated $sra$READS_EXT"
+  
   FASTQ_ARR=($sra"_1" $sra"_2")
+  
   #for each fastq above, asuuming it has no extension just prefix
   for fastq in ${FASTQ_ARR[@]} do
+
+    echo "processing $fastq..."
+    
     #for each scaffold generate BAM
     for scaffold in ${SCAFF_ARR[@]} do
 
+      echo "processing $scaffold..."
+	 
       #generate index using BWA
       cd $SCAFF_DIR"/"$scaffold
       
@@ -64,24 +84,32 @@ for sra in ${READS_ARR[@]} do
 
       #generate sai
       $BWA aln -n 3 -l 1000000 -o 1 -e 5 $scaffold$SCAFF_EXT $OUT_DIR"/"$fastq$FASTQ_EXT > $fastq$SAI_EXT
-
+      echo "generating $fastq$SAI_EXT"
+      
       #generate sam file for sai
       $BWA samse -n 15 $scaffold$SCAFF_EXT $fastq$SAI_EXT $OUT_DIR"/"$fastq$FASTQ_EXT > $fastq$SAM_EXT
-
+      echo "generating $fastq$SAM_EXT..."
+      
       #convert to unique sam, with info
       perl $UNIQUESAMPL $SCAFF_DIR"/"$scaffold"/"$fastq$SAM_EXT $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_SAM_EXT $SCAFF_DIR"/"$scaffold"/"$fastq$SAM_INFO_EXT
-
+      echo "generating $fastq$UNIQ_SAM_EXT"
+      
       #convert to bam
       $SAMTOOLS view -bS -q 30 xo$SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_SAM_EXT  > $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_BAM_EXT
-
+      echo "generating $fastq$UNIQ_BAM_EXT..."
+      
       #convert to sorted bam
-      $SAMTOOLS sort  $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_BAM_EXT $SCAFF_DIR"/"$scaffold"/"$fastq$SORT_BAM_EXT 
+      $SAMTOOLS sort  $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_BAM_EXT $SCAFF_DIR"/"$scaffold"/"$fastq$SORT_BAM_EXT
+      echo "generating $fastq$SORT_BAM_EXT"
+      
     done #end scaffold
   done #end fastq
   #delete completed fastq
   rm $OUT_DIR"/"$fastq$FASTQ_EXT
 done #end sra
 
+
+echo "apply tools to generate SNPs"
 #for each scaffold
 for scaffold in ${SCAFF_ARR[@]} do
 
