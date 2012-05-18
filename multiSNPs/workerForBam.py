@@ -1,12 +1,12 @@
 import sys
 import os
-
 from subprocess import call
 
+#get the read name from the read path
 def getLibraryName(readLibraryPath):
     return ((readLibraryPath.split('/')[-1]).split('.'))[0]
 
-
+#check the existence if exists of fastq file in outDir
 def checkIfFastQExists(fileNamePrefix, fileExt, outDir):
     try:
         dirContents=os.listdir(outDir)
@@ -21,7 +21,7 @@ def checkIfFastQExists(fileNamePrefix, fileExt, outDir):
     return False
 
 
-
+#a dictionary of all tools being used
 def getToolsDict():
     tools = {}
     tools['BWA'] = "/project/huws/huwsgroup/Nitya/Mapping/Mapping_quality/bwa-0.5.9rc1/bwa"
@@ -35,6 +35,7 @@ def getToolsDict():
     tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone"
     return tools
 
+#a dictionary of all possible extensions
 def getExtDict():
     extensions = {}
     extensions['READS_EXT'] = ".lite.sra"
@@ -49,7 +50,7 @@ def getExtDict():
     extensions['SORT_BAM_EXT'] = "_Unique.sorted"               
     return extensions
 
-
+#genearate fastq files using fastw dump from read
 def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
     #extract library name
     libName = getLibraryName(readLibraryPath)
@@ -71,6 +72,7 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
         print >>sys.stderr, "Execution failed: ", e
     return retcode
 
+#call the parallel drone program to process the multiple jobs file
 def callParallelDrone(jobsFilePath, parallelDrone):
     #call parallel Drone program
     retcode = -99
@@ -89,13 +91,15 @@ def callParallelDrone(jobsFilePath, parallelDrone):
 def getScaffoldName(scaffName):
     return ''.join((scaffName.split('.'))[:-1])
 
+#get all fastas from a given directory
 def getAllFastas(scaffDir):
     dirContents = os.listdir(scaffDir)
     scaffDirs = [ name for name in dirContents if os.path.isdir(\
                                                  os.path.join(scaffDir, name)\
                                                      ) ]
     return scaffDirs
-    
+
+#get all fastQ files for a read from outDirectory
 def getAllFastQs(outDir, libName):
     fastQExt = '.fastq'
     dirContents = os.listdir(outDir)
@@ -106,6 +110,8 @@ def getAllFastQs(outDir, libName):
            fastQFiles.append(name)
     return fastQFiles
 
+
+#write a job for a given scaffold and read to a job file
 def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
     extensions = getExtDict()
@@ -202,9 +208,9 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
     tools = getToolsDict()
     
     #generate fastQ's for this read library
-    #fastQStatus = generateFastQ(readLibraryPath, outDir, \
-    #                                  tools['FASTQDUMP_CMD'])
-    fastQStatus = 1
+    fastQStatus = generateFastQ(readLibraryPath, outDir, \
+                                      tools['FASTQDUMP_CMD'])
+
     if fastQStatus != 1:
         #some error occured
         print "fastqstatus erred"
@@ -233,18 +239,13 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
         fastQJobFile.close()
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)        
-
+        return -1
 
     #execute the wrote jobs through DRONE parallely
-    retCode = callParallelDrone(fastQJobsFileName, tools['PARALLEL_DRONE'])
+    retCode = callParallelDrone(outDir+'/'+fastQJobsFileName,\
+                                    tools['PARALLEL_DRONE'])
     if retCode != 1:
         #error occured while calling parallel drone
         print "parallel drone erred"
-    
-       
-
-    
-
-    
-    
-    
+        return -1
+    return 1
