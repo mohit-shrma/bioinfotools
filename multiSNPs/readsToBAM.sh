@@ -95,7 +95,7 @@ for sra in ${READS_ARR[@]} do
       echo "generating $fastq$UNIQ_SAM_EXT"
       
       #convert to bam
-      $SAMTOOLS view -bS -q 30 xo$SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_SAM_EXT  > $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_BAM_EXT
+      $SAMTOOLS view -bS -q 30 $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_SAM_EXT  > $SCAFF_DIR"/"$scaffold"/"$fastq$UNIQ_BAM_EXT
       echo "generating $fastq$UNIQ_BAM_EXT..."
       
       #convert to sorted bam
