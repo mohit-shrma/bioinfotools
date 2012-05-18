@@ -117,7 +117,7 @@ for scaffold in ${SCAFF_ARR[@]} do
   java -Xms2048m -jar $PICARD_TOOLS"/CreateSequenceDictionary.jar" R=$SCAFF_DIR"/"$scaffold"/"$scaffold$SCAFF_EXT O=$SCAFF_DIR"/"$scaffold"/"$scaffold".dict"
   
   #merge all bams for this scaffold into single bam
-  $SAMTOOLS merge $SCAFF_DIR"/"$scaffold"/"$scaffold$SORT_BAM_EXT $SCAFF_DIR"/"$scaffold"/"$scaffold"*.bam"
+  $SAMTOOLS merge $SCAFF_DIR"/"$scaffold"/"$scaffold$SORT_BAM_EXT $SCAFF_DIR"/"$scaffold"/"$scaffold"*_Unique.bam"
 
   #add or replace read groups
   java -Xms2048m -jar $PICARD_TOOLS"/AddOrReplaceReadGroups.jar" I=$SCAFF_DIR"/"$scaffold"/"$scaffold$SORT_BAM_EXT O=$SCAFF_DIR"/"$scaffold"/"$scaffold"_picard2.sorted.bam" SORT_ORDER=coordinate RGLB=1 RGPL=illumina RGPU=bar RGSM=BMGC VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=TRUE

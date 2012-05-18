@@ -26,7 +26,7 @@ def callBamWorker((readPath, outDir, lockDirPath, fastaPath)):
     print "PID: ", os.getpid()
     workerForBam.workerToGenBAM(readPath, outDir, lockDirPath, fastaPath)
 
-def createBAMWorkers(readsDir, outDir, locksDir, fastaDir):
+def callBamWorkers(readsDir, outDir, locksDir, fastaDir):
     reads = getReads(readsDir)
     print reads
     pool = Pool(processes=len(reads))
@@ -34,9 +34,22 @@ def createBAMWorkers(readsDir, outDir, locksDir, fastaDir):
     for read in reads:
         readPath = readsDir + read
         workersArgs.append((readPath, outDir, locksDir, fastaDir))
-    pool.map(callBamWorker, workersArgs)
+    results = pool.map(callBamWorker, workersArgs)
+    pool.close()
+    pool.join()
+    return results
+
+def isValidResults(results):
+    if sum(results) == len(results):
+        return True
+    else:
+        return False
 
 def main():
+
+    logger = multiprocessing.log_to_stderr()
+    logger.setLevel(multiprocessing.SUBDEBUG)
+
     if len(sys.argv) >= 4:
         #directory containing reads library
         readsDir = getAbsPath(sys.argv[1])
@@ -51,10 +64,14 @@ def main():
         outDir = getAbsPath(sys.argv[4])
 
         #call child workers to do the job
-        createBAMWorkers(readsDir, outDir, locksDir, fastaDir)
+        bamWorkResults = callBamWorkers(readsDir, outDir, locksDir, fastaDir)
 
-        logger = multiprocessing.log_to_stderr()
-        logger.setLevel(multiprocessing.SUBDEBUG)
+        if not isValidResults(bamWorkResults):
+            print "a worker on strike"
+            return
+
+        #now for all scaffolds combined bams and look for SNPs
+        #TODO:
         
     else:
         print 'err: files missing'
