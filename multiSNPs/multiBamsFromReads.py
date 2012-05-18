@@ -1,5 +1,6 @@
 import sys
 import os
+import parallelSNPsFinder
 from multiprocessing import Pool
 import multiprocessing, logging
 
@@ -24,7 +25,7 @@ def getAbsPath(dir):
 
 def callBamWorker((readPath, outDir, lockDirPath, fastaPath)):
     print "PID: ", os.getpid()
-    workerForBam.workerToGenBAM(readPath, outDir, lockDirPath, fastaPath)
+    return workerForBam.workerToGenBAM(readPath, outDir, lockDirPath, fastaPath)
 
 def callBamWorkers(readsDir, outDir, locksDir, fastaDir):
     reads = getReads(readsDir)
@@ -66,12 +67,14 @@ def main():
         #call child workers to do the job
         bamWorkResults = callBamWorkers(readsDir, outDir, locksDir, fastaDir)
 
+        print "bam work results: " + str(bamWorkResults)
+        
         if not isValidResults(bamWorkResults):
             print "a worker on strike"
             return
 
         #now for all scaffolds combined bams and look for SNPs
-        #TODO:
+        parallelSNPsFinder.snpsFinder(fastaDir, outDir, locksDir)
         
     else:
         print 'err: files missing'

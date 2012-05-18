@@ -7,7 +7,7 @@ import workerForBam
 #write a job for given scaffold to a jobFile
 def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
 
-    extensions = getExtDict()
+    extensions = workerForBam.getExtDict()
 
     #fasta file name
     fastaFileName = (fastaFilePath.split('/')[-1]).split('.')[0]
@@ -40,19 +40,20 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     #built fasta sequence dictionary
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/CreateSequenceDictionary.jar R=" + fastaFilePath\
-                       + "O=" + fastaDir + fastaFileName +".dict; ")
+                       + " O=" + fastaDir + fastaFileName +".dict; ")
 
     #merge all bams for this scaffold into single bama
     jobsFile.write(tools['SAMTOOLS'] + " merge "\
-                       + fastaDir + fastaFileName + extensions[SORT_BAM_EXT]\
-                       + fastaDir + fastaFileName + "*_Unique.bam; ")
+                       + fastaDir + fastaFileName + extensions['SORT_BAM_EXT'] + " "\
+                       + fastaDir + fastaFileName + "*" + extensions['SORT_BAM_EXT']\
+                       + " ; ")
 
     #add or replace read groups
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/AddOrReplaceReadGroups.jar I="\
-                       + fastaDir + "/" + fastaFileName\
+                       + fastaDir + fastaFileName\
                        + extensions['SORT_BAM_EXT'] + " O="\
-                       + fastaDir + "/" + fastaFileName + "_picard2.sorted.bam"\
+                       + fastaDir + fastaFileName + "_picard2.sorted.bam"\
                        + " SORT_ORDER=coordinate RGLB=1 RGPL=illumina RGPU=bar" \
                        + " RGSM=BMGC VALIDATION_STRINGENCY=LENIENT"\
                        + " CREATE_INDEX=TRUE; ")
@@ -60,22 +61,22 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     #reorder SAM
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/ReorderSam.jar I="\
-                       + fastaDir + "/" + fastaFileName + "_picard2.sorted.bam"\
-                       + " O="+fastaDir + "/" + fastaFileName\
+                       + fastaDir + fastaFileName + "_picard2.sorted.bam"\
+                       + " O="+fastaDir + fastaFileName\
                        + "_picard3.sorted.bam " + "REFERENCE="+fastaFilePath\
                        + " VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=TRUE; ")
 
     #genome analysis tK realigner target creator
     jobsFile.write("java -Xms2048m -jar " + tools['GENOME_ANALYSIS_TK_JAR']\
                        + " -T RealignerTargetCreator -R " + fastaFilePath\
-                       + " -I " + fastaDir + "/" + fastaFileName
-                       + "_picard3.sorted.bam -o " + fastaDir + fastaFileName +\
+                       + " -I " + fastaDir + fastaFileName\
+                       + "_picard3.sorted.bam -o " + fastaDir + fastaFileName\
                        + ".intervals; ")
 
     #genome analysis tK indel realigner
     jobsFile.write("java -Xms2048m -jar " + tools['GENOME_ANALYSIS_TK_JAR']\
                        + " -T IndelRealigner -R " + fastaFilePath\
-                       + " -I " + fastaDir + "/" + fastaFileName\
+                       + " -I " + fastaDir + fastaFileName\
                        + "_picard3.sorted.bam -targetIntervals "\
                        +  fastaDir + fastaFileName\
                        + ".intervals -o " + fastaDir + fastaFileName\
@@ -83,12 +84,12 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     
     #sangerq sorted bam
     #TODO: where is sangerq used
-    jobsFile.write(tools['SAMTOOLS'] + " view -h " + fastaDir + fastaFileName\
+    """jobsFile.write(tools['SAMTOOLS'] + " view -h " + fastaDir + fastaFileName\
                        + "_gatkrealigned.sorted.bam | perl -lane '$\"=\"\\t\";"\
                        + " if (/^@/) {print;} else {$F[10]=~ tr/\\x40-\\xff"\
                        + "\\x00-\\x3f/\\x21-\\xe0\\x21/;print \"@F\"}' | )"\
                        + tools['SAMTOOLS'] + " view -Sbh - > " + fastaDir\
-                       + fastaFileName + "_gatkrealigned_sangerQ.sorted.bam; ")
+                       + fastaFileName + "_gatkrealigned_sangerQ.sorted.bam; ")"""
 
     #mpileup generation
     jobsFile.write(tools['SAMTOOLS'] + " mpileup -BQ0 -d10000000 -f "\
@@ -139,7 +140,7 @@ outDir - place where jobs file will be written for execution by drone
 def snpsFinder(fastaPath, outDir, lockDirPath):
 
     #get all tools
-    tools = getToolsDict()
+    tools = workerForBam.getToolsDict()
 
     #get all scaffold folder names inside fasta dir
     fastaDirs = workerForBam.getAllFastas(fastaPath)
@@ -149,12 +150,12 @@ def snpsFinder(fastaPath, outDir, lockDirPath):
 
     try:
         #open the snpsFinderJob file
-        snpsFinderJobFile = open(snpsFinderJobFileName, 'w')
+        snpsFinderJobFile = open(outDir + '/' + snpsFinderJobFileName, 'w')
 
         for fastaDir in fastaDirs:
             #get fasta file path
             fastaFilePath = fastaPath + fastaDir + "/" + fastaDir + ".fasta"
-            writeJob(snpsFinderJobFile, fastaFilePath, lockDirPath, tools):
+            writeJob(snpsFinderJobFile, fastaFilePath, lockDirPath, tools)
         snpsFinderJobFile.close()    
         
     except IOError as (errno, strerror):

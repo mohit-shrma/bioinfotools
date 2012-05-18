@@ -47,7 +47,7 @@ def getExtDict():
     extensions['UNIQ_SAM_EXT'] = "_Unique.sam"
     extensions['SAM_INFO_EXT'] = "_info.txt"
     extensions['UNIQ_BAM_EXT'] = "_Unique.bam"
-    extensions['SORT_BAM_EXT'] = "_Unique.sorted"               
+    extensions['SORT_BAM_EXT'] = "_Unique.sorted.bam"               
     return extensions
 
 #genearate fastq files using fastw dump from read
@@ -210,11 +210,10 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
     #generate fastQ's for this read library
     fastQStatus = generateFastQ(readLibraryPath, outDir, \
                                       tools['FASTQDUMP_CMD'])
-
     if fastQStatus != 1:
         #some error occured
         print "fastqstatus erred"
-        return
+        return -1
     
     #write a file containing multiple jobs for each fasta
     fastQJobsFileName = libName + "Jobs.jobs"
