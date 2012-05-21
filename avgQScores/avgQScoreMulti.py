@@ -1,7 +1,8 @@
 import sys
 import os
-from multiprocessing import pool
+from multiprocessing import Pool
 import multiprocessing, logging
+from subprocess import call
 
 #return the absolute path of a filepath
 def getAbsPath(dir):
@@ -45,7 +46,7 @@ def getDirNFileName(filePath):
     fileName = (filePath.split('/')[-1]).split('.')[0]
 
     #folder containing file
-    fileDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+    fileDir = '/'.join(filePath.split('/')[:-1]) + '/'
 
     return (fileDir, fileName)
 
@@ -59,7 +60,7 @@ def qscoreWorker((fastQPath, qScoreFilePath, qScorePerlScript)):
     if fastQPath.endswith('.gz'):
         #unzip compressed fastQ
         try:
-            retcode = call(["gunzip", fastQPath])
+            retcode = call(["gunzip", "-f", fastQPath])
             if retcode != 0:
                 #unzip command failed
                 print >>sys.stderr, "unzip command fail"
@@ -75,21 +76,23 @@ def qscoreWorker((fastQPath, qScoreFilePath, qScorePerlScript)):
     #output file paths to be passed to perl script
     seqAvgsFilePath = fastQDir + '/' + fastQFileName + '_seqavgs.txt'
     seqAvgScorePath = fastQDir + '/' + fastQFileName + '_avgscore.txt'
-    
+
+    print seqAvgsFilePath, seqAvgScorePath
+    print >>sys.stdout, seqAvgsFilePath, seqAvgScorePath
     #call perl script for calculation on passed fastq
     #retcode = call("perl" + qScorePerlScript
     #    + " fastQPath qScoreFilePath seqAvgsFilePath seqAvgScorePath ",
     #        shell=True)
     try: 
-        retcode = call([qScorePerlScript, fastqpath, qScoreFilePath,\
+        retcode = call([qScorePerlScript, fastQPath, qScoreFilePath,\
                        seqAvgsFilePath, seqAvgScorePath])
         if retcode == 0:
             #passed
-            print fastqpath + " evaluated"
+            print fastQPath + " evaluated"
             return 1
         else:
             #failed
-            print fastqpath + " evaluation failed"
+            print fastQPath + " evaluation failed"
     except OSError, e:
         print >>sys.stderr, "Execution failed: ", e
 
@@ -103,6 +106,7 @@ def prepAndRunWorkers(fastQPaths, qScoreFilePath, qScorePerlScript):
     #prepare argument for each worker
     for fastQPath in fastQPaths:
         workersArgs.append((fastQPath, qScoreFilePath, qScorePerlScript))
+    print "calling pool.map"
     results = pool.map(qscoreWorker, workersArgs)
     pool.close()
     pool.join()
@@ -132,7 +136,7 @@ def main():
         print fastQFilePaths, len(fastQFilePaths)
         
         #call child workers to do the job
-        #prepAndRunWorkers(fastQFilePaths, qScoreFile, qScorePerlScript)
+        prepAndRunWorkers(fastQFilePaths, qScoreFile, qScorePerlScript)
     else:
         print 'err: files missing'
 
