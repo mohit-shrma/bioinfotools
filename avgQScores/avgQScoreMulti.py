@@ -30,10 +30,15 @@ def getAllFastqsPath(samplesDir):
 
     #find all fastq's after
     for sampleDir in allSamplesDir:
+
         sampleDirContents = os.listdir(sampleDir)
+
         for name in sampleDirContents:
-            if name.endswith('.fastq') \
-                    or name.endswith('.fastq.gz'):
+            
+            if name.endswith('.fastq'):
+                if name+'.gz' not in sampleDirContents:
+                    fastQsFilePaths.append(os.path.join(sampleDir, name))
+            elif name.endswith('.fastq.gz'):
                 #either fastq or fastq compressed file
                 fastQsFilePaths.append(os.path.join(sampleDir, name))
                 
