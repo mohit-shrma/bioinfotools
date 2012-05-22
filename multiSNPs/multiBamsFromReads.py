@@ -65,6 +65,7 @@ def main():
         outDir = getAbsPath(sys.argv[4])
 
         #call child workers to do the job
+        print "calling child workers"
         bamWorkResults = callBamWorkers(readsDir, outDir, locksDir, fastaDir)
 
         print "bam work results: " + str(bamWorkResults)

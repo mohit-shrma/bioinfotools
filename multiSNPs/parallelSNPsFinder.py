@@ -40,23 +40,23 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     #built fasta sequence dictionary
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/CreateSequenceDictionary.jar R=" + fastaFilePath\
-                       + " O=" + fastaDir + fastaFileName +".dict; ")
+                       + " O=" + fastaDir + fastaFileName +".dict ; ")
 
     #merge all bams for this scaffold into single bama
     jobsFile.write(tools['SAMTOOLS'] + " merge "\
-                       + fastaDir + fastaFileName + extensions['SORT_BAM_EXT'] + " "\
-                       + fastaDir + fastaFileName + "*" + extensions['SORT_BAM_EXT']\
+                       + fastaDir + fastaFileName + extensions['SORT_BAM_EXT'] + ".bam "\
+                       + fastaDir + fastaFileName + "*" + extensions['SORT_BAM_EXT'] + ".bam "\
                        + " ; ")
 
     #add or replace read groups
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/AddOrReplaceReadGroups.jar I="\
                        + fastaDir + fastaFileName\
-                       + extensions['SORT_BAM_EXT'] + " O="\
+                       + extensions['SORT_BAM_EXT'] + ".bam  O="\
                        + fastaDir + fastaFileName + "_picard2.sorted.bam"\
                        + " SORT_ORDER=coordinate RGLB=1 RGPL=illumina RGPU=bar" \
                        + " RGSM=BMGC VALIDATION_STRINGENCY=LENIENT"\
-                       + " CREATE_INDEX=TRUE; ")
+                       + " CREATE_INDEX=TRUE ; ")
 
     #reorder SAM
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
@@ -64,14 +64,14 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
                        + fastaDir + fastaFileName + "_picard2.sorted.bam"\
                        + " O="+fastaDir + fastaFileName\
                        + "_picard3.sorted.bam " + "REFERENCE="+fastaFilePath\
-                       + " VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=TRUE; ")
+                       + " VALIDATION_STRINGENCY=LENIENT CREATE_INDEX=TRUE ; ")
 
     #genome analysis tK realigner target creator
     jobsFile.write("java -Xms2048m -jar " + tools['GENOME_ANALYSIS_TK_JAR']\
                        + " -T RealignerTargetCreator -R " + fastaFilePath\
                        + " -I " + fastaDir + fastaFileName\
                        + "_picard3.sorted.bam -o " + fastaDir + fastaFileName\
-                       + ".intervals; ")
+                       + ".intervals ; ")
 
     #genome analysis tK indel realigner
     jobsFile.write("java -Xms2048m -jar " + tools['GENOME_ANALYSIS_TK_JAR']\
@@ -80,7 +80,7 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
                        + "_picard3.sorted.bam -targetIntervals "\
                        +  fastaDir + fastaFileName\
                        + ".intervals -o " + fastaDir + fastaFileName\
-                       + "_gatkrealigned.sorted.bam; ")
+                       + "_gatkrealigned.sorted.bam ; ")
     
     #sangerq sorted bam
     #TODO: where is sangerq used
@@ -95,7 +95,7 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     jobsFile.write(tools['SAMTOOLS'] + " mpileup -BQ0 -d10000000 -f "\
                        + fastaFilePath + " " + fastaDir + fastaFileName\
                        + "_gatkrealigned.sorted.bam > " + fastaDir\
-                       + fastaFileName +"_gatkrealigned.mpileup; ")
+                       + fastaFileName +"_gatkrealigned.mpileup ; ")
 
     #use varscan to make realigned cns
     jobsFile.write("java -jar " + tools['VARSCAN_JAR'] +" mpileup2cns "\
@@ -103,7 +103,7 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
                        + " --min-coverage 8 --min-reads2 3 --min-avg-qual 20"\
                        + " --min-var-freq 0.01 --p-value 0.99 --strand-filter"\
                        + " 0 --variants 1 > " + fastaDir + fastaFileName\
-                       + "_realigned.cns; ")
+                       + "_realigned.cns ; ")
 
     #generate indels
     jobsFile.write("java -jar " + tools['VARSCAN_JAR'] + " mpileup2indel "\
@@ -111,18 +111,18 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
                        + " --min-coverage 8 --min-reads2 3 --min-avg-qual 20"\
                        + " --min-var-freq 0.01 --p-value 0.99 --strand-filter 0"\
                        + " --variants 1 > " + fastaDir + fastaFileName\
-                       + "_realigned2.indel; ")
+                       + "_realigned2.indel ; ")
 
     #rename mpileup to pileup
     jobsFile.write("mv " + fastaDir + fastaFileName + "_gatkrealigned.mpileup "\
-                       + fastaDir + fastaFileName + "_gatkrealigned.pileup; ")
+                       + fastaDir + fastaFileName + "_gatkrealigned.pileup ; ")
 
     #pileup to SNP
     jobsFile.write("java -jar " + tools['VARSCAN_JAR'] + " pileup2snp "\
                        + fastaDir + fastaFileName + "_gatkrealigned.pileup"\
                        + "  --min-coverage 8 --min-reads2 3 --min-avg-qual 20"\
                        + " --min-var-freq 0.01 --p-value 0.99 > "\
-                       + fastaDir + fastaFileName + "_realigned3.snp; ")
+                       + fastaDir + fastaFileName + "_realigned3.snp ")
                    
                    
     #create lock.out file indicating completion
@@ -150,7 +150,7 @@ def snpsFinder(fastaPath, outDir, lockDirPath):
 
     try:
         #open the snpsFinderJob file
-        snpsFinderJobFile = open(outDir + '/' + snpsFinderJobFileName, 'w')
+        snpsFinderJobFile = open(outDir + snpsFinderJobFileName, 'w')
 
         for fastaDir in fastaDirs:
             #get fasta file path
@@ -163,9 +163,10 @@ def snpsFinder(fastaPath, outDir, lockDirPath):
         return -1
 
     #execute the wrote jobs through DRONE parallely
-    retCode = workerForBam.callParallelDrone( outDir+'/'+snpsFinderJobFileName,\
+    print "drone: ", outDir + snpsFinderJobFileName
+    retCode = workerForBam.callParallelDrone( outDir + snpsFinderJobFileName,\
                                                   tools['PARALLEL_DRONE'])
-    if retCode != 1:
+    if retCode != 0:
         #error occured while calling parallel drone
         print "parallel drone erred"
         return -1

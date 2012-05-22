@@ -24,15 +24,14 @@ def checkIfFastQExists(fileNamePrefix, fileExt, outDir):
 #a dictionary of all tools being used
 def getToolsDict():
     tools = {}
-    tools['BWA'] = "/project/huws/huwsgroup/Nitya/Mapping/Mapping_quality/bwa-0.5.9rc1/bwa"
-    tools['FASTQDUMP_CMD'] = "/project/huws/huwsgroup/Andrew/CHIPseq/sratoolkit.2.1.0-ubuntu32/fastq-dump"
-    tools['SAMTOOLS'] = "/project/huws/huwsgroup/Nitya/SAMtools18/samtools-0.1.18/samtools"
-    tools['UNIQUESAMPL'] = "/project/huws/huwsgroup/mohit/bgicomp/readsBwa/pull_Unique_reads.pl"
-    tools['PICARD_TOOLS'] ="/project/huws/huwsgroup/mohit/picard-tools-1.68"
-    tools['GENOME_ANALYSIS_TK_JAR'] = "/project/huws/huwsgroup/mohit/GenomeAnalysisTK/GenomeAnalysisTK.jar"
-    tools['SAMTOOLS'] = "/project/huws/huwsgroup/mohit/samtools-0.1.18/samtools"
-    tools['VARSCAN_JAR'] = "/project/huws/huwsgroup/mohit/varscan/VarScan.v2.2.10.jar"
-    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone"
+    tools['BWA'] = "/home/koronis/mohit/programs/bwa-0.6.1/bwa"
+    tools['FASTQDUMP_CMD'] = "/home/koronis/mohit/programs/sratoolkit.2.1.0-ubuntu32/fastq-dump"
+    tools['SAMTOOLS'] = "/home/koronis/mohit/programs/samtools-0.1.18/samtools"
+    tools['UNIQUESAMPL'] = "/home/koronis/mohit/programs/pull_Unique_reads.pl"
+    tools['PICARD_TOOLS'] ="/home/koronis/mohit/programs/picard-tools-1.68"
+    tools['GENOME_ANALYSIS_TK_JAR'] = "/home/koronis/mohit/programs/GenomeAnalysisTK/GenomeAnalysisTK.jar"
+    tools['VARSCAN_JAR'] = "/home/koronis/mohit/programs/varscan/VarScan.v2.2.10.jar"
+    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone "
     return tools
 
 #a dictionary of all possible extensions
@@ -47,7 +46,7 @@ def getExtDict():
     extensions['UNIQ_SAM_EXT'] = "_Unique.sam"
     extensions['SAM_INFO_EXT'] = "_info.txt"
     extensions['UNIQ_BAM_EXT'] = "_Unique.bam"
-    extensions['SORT_BAM_EXT'] = "_Unique.sorted.bam"               
+    extensions['SORT_BAM_EXT'] = "_Unique.sorted"               
     return extensions
 
 #genearate fastq files using fastw dump from read
@@ -56,15 +55,16 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
     libName = getLibraryName(readLibraryPath)
     retcode = -99
     try:
-        retcode = call(fastQDumpCmd + "-A " + libName
-                       + "-O " + outDir + " " +  readLibraryPath,
-                       shell=True)
+        #retcode = call(fastQDumpCmd + " -A " + libName
+        #               + " -O " + outDir + " " +  readLibraryPath,
+        #               shell=True)
+        retcode = 0               
         if retcode < 0:
-            print >>sys.stderr, "child terminated by signal", -retcode
+            print >>sys.stderr, "child terminated by signal", retcode
         else:
             print >>sys.stderr, "child returned", retcode
             #check if retcode is 0 then check for existence of fataq file
-            if checkIfFastQExists(libname, getExtDict()['FASTQ_EXT'], outDir):
+            if retcode == 0 and checkIfFastQExists(libName, getExtDict()['FASTQ_EXT'], outDir):
                 return 1
             else:
                 return 0
@@ -77,7 +77,6 @@ def callParallelDrone(jobsFilePath, parallelDrone):
     #call parallel Drone program
     retcode = -99
     try:
-        #TODO:
         retcode = call(parallelDrone  + " " + jobsFilePath, shell=True)
         if retcode < 0:
             print >>sys.stderr, "child terminated by signal", -retcode
@@ -153,9 +152,9 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     #Burrow wheel aligner processing
     
     #generate index
-    jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
-                       + fastaFileName + extensions['SCAFF_EXT'] \
-                       + " " + fastaFilePath + "; ")
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
 
     #generate SAI
     jobsFile.write(tools['BWA'] +" aln -n 3 -l 1000000 -o 1 -e 5 "\
@@ -241,9 +240,10 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
         return -1
 
     #execute the wrote jobs through DRONE parallely
-    retCode = callParallelDrone(outDir+'/'+fastQJobsFileName,\
+    print "call drone", outDir + fastQJobsFileName
+    retCode = callParallelDrone(outDir + fastQJobsFileName,\
                                     tools['PARALLEL_DRONE'])
-    if retCode != 1:
+    if retCode != 0:
         #error occured while calling parallel drone
         print "parallel drone erred"
         return -1
