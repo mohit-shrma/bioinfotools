@@ -79,17 +79,23 @@ def qscoreWorker((fastQPath, qScoreFilePath, qScorePerlScript)):
     (fastQDir, fastQFileName) = getDirNFileName(fastQPath)
 
     #output file paths to be passed to perl script
-    seqAvgsFilePath = fastQDir + '/' + fastQFileName + '_seqavgs.txt'
-    seqAvgScorePath = fastQDir + '/' + fastQFileName + '_avgscore.txt'
+    seqAvgsFilePath = fastQDir  + fastQFileName + '_seqavgs.txt'
+    seqAvgScorePath = fastQDir  + fastQFileName + '_avgscore.txt'
 
-    print seqAvgsFilePath, seqAvgScorePath
-    print >>sys.stdout, seqAvgsFilePath, seqAvgScorePath
+    #print qScorePerlScript, fastQPath, seqAvgsFilePath, seqAvgScorePath
+
+    print >>sys.stdout, qScorePerlScript, fastQPath, seqAvgsFilePath, seqAvgScorePath
+
+    #flush the output stream
+    sys.stdout.flush()
+    
     #call perl script for calculation on passed fastq
     #retcode = call("perl" + qScorePerlScript
     #    + " fastQPath qScoreFilePath seqAvgsFilePath seqAvgScorePath ",
     #        shell=True)
+    
     try: 
-        retcode = call([qScorePerlScript, fastQPath, qScoreFilePath,\
+        retcode = call(["perl", qScorePerlScript, fastQPath, qScoreFilePath,\
                        seqAvgsFilePath, seqAvgScorePath])
         if retcode == 0:
             #passed
@@ -129,10 +135,10 @@ def main():
         samplesDir = getAbsPath(sys.argv[1])
         
         #quality scores file
-        qScoreFile = getAbsPath(sys.argv[2])
+        qScoreFile = getAbsPath(sys.argv[2]).rstrip('/')
 
         #perl script for qscore calculation
-        qScorePerlScript = getAbsPath(sys.argv[3])
+        qScorePerlScript = getAbsPath(sys.argv[3]).rstrip('/')
         
         #fastQs paths
         fastQFilePaths = getAllFastqsPath(samplesDir)
