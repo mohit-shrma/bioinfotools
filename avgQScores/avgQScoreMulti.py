@@ -25,7 +25,10 @@ def combineFastQs(sampleDir):
     #concatenate all fastq's inside to fastqpath
     retcode = -1
     try:
-        retcode = call(["cat ", "*.fastq", " > " + combinedFilePath])
+        allFastQsPath = os.path.join(sampleDir, "*.fastq")
+        print allFastQsPath, combinedFilePath
+        retcode = call("cat " + allFastQsPath\
+                            + " > " + combinedFilePath, shell=True)
         if retcode == 0:
             #successfully concatenated fastq
             retcode = 1
@@ -48,8 +51,8 @@ def allSampleDirsPath(sampleDirsParent):
     allSamplesDir = []
     
     #get list of samples directory inside the passed dir
-    for name in samplsDirContents:
-        contentPath = os.path.join(samplesDir, name)
+    for name in samplesDirContents:
+        contentPath = os.path.join(sampleDirsParent, name)
         if os.path.isdir(contentPath):
             allSamplesDir.append(contentPath)
     return allSamplesDir
