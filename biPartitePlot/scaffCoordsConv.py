@@ -53,6 +53,106 @@ def getConvScaffCoordRange(listScaffsRange):
     return coordScaffsDict
 
 
+def getNewCoordsAfterSwap(scaff1Name, scaff2Name, oldListScaffsRange):
+    scaff1Ind = -1
+    scaff2Ind = -1
+    i = 0
+    newCoordScaffsDict = {}
+    for (scaffName, len) in oldListScaffsRange:
+        if scaffName == scaff1Name:
+            scaff1Ind = i
+        if scaffName == scaff2Name:
+            scaff2Ind = i
+    if scaff1Ind != -1 and scaff2Ind != -1:
+        #swap these indices and make new list range
+        oldListScaffsRange[scaff1Ind], oldListScaffsRange[scaff2Ind]\
+            = oldListScaffsRange[scaff2Ind], oldListScaffsRange[scaff1Ind]
+        #and get the new mappings based on new coordinate scale
+        newCoordScaffsDict = getConvScaffCoordRange(oldListScaffsRange)
+        if len(newCoordScaffDict) == 0:
+            print 'some error occured while genearating the new coordinates'
+    return (oldListScaffsRange, newCoordScaffsDict)
+
+
+
+#parse the pairwise scaffolds
+def performPairwiseScaffFlips(scaffMap, oldListScaffRange, oldCoordScaffsDict):
+    scaffNameKeys = scaffMap.keys()
+    prevScaffName = scaffNameKeys[0]
+    for currScaffName in scaffNameKeys[1:]:
+        intersectCount = countIntersect(prevscaffname, currScaffName, scaffMap)
+        if intersectCount > 0:
+            #swap scaffs
+            newListScaffRange, newCoordScaffsDict = getNewCoordsAfterSwap(\
+                prevscaffname, currScaffName, oldListScaffRange)
+            #get new mapping info after swap
+            newPrevMappingInfo = getNewScafMappingInfo(prevScaffName,\
+                                                           oldCoordScaffsDict, \
+                                                           newCoordScaffsDict,\
+                                                           scaffMap[prevScaffName])
+            newCurrMappingInfo = getNewScafMappingInfo(currScaffName,\
+                                                           oldCoordScaffsDict, \
+                                                           newCoordScaffsDict,\
+                                                           scaffMap[prevScaffName])
+            newCustomMap = { prevScaffName: newPrevMappingInfo,\
+                                currScaffName: newCurrMappingInfo }
+            #get the intersection count after swap
+            newIntersectCount = countIntersect(prevscaffname, currScaffName,\
+                                                   newCustomMap)
+            if newIntersectCount < intersectCount:
+                #for this pair we saw some decrease in count of intersection
+                oldListScaffRange = newListScaffRange
+                oldCoordScaffsDict = newCoordScaffsDict
+                scaffMap[prevscaffname]  = newPrevMappingInfo
+                scaffMap[currScaffName] = newCurrMappingInfo
+    return (oldListScaffRange, oldCoordScaffsDict, scaffMap)  
+            
+
+
+#based on the new mapping transformed the old matching regions of scaffold 
+def getNewScafMappingInfo(scaffName, oldCoordScaffsDict, newCoordScaffsDict,\
+                              mappingInfos ):
+    oldStart = oldCoordScaffsDict[scaffName][0]
+    newStart = newCoordScaffsDict[scaffName][0]
+
+    for i in range(len(mappingInfos)):
+        refTranslatedCoord = mappingInfos[i][0]
+        refTranslatedCoord = refTranslatedCoord - oldStart + newStart
+        mappingInfo[i][0] = refTranslatedCoord
+    return mappingInfos
+
+
+#intersection of two lines given their end y's
+#(y1,y2) are y's of one line endpoint ||ly (y3, y4)
+def isIntersect(y1, y2, y3, y4):
+    diff1 = y1- y3
+    diff2 = y2 - y4
+    if (diff1*diff2) >= 0:
+        return True
+    else:
+        return False
+    
+
+#count intersection between two scaffold
+#scaffMap: name -> [(refTranslatedCoord, queryScaffName, \
+#    queryTranslatedCoord, refMatchedLen), ... ]
+def countIntersect(scaff1Name, scaff2Name, scaffMap):
+    intersectionCount = 0
+    allScaff1Hits = scaffMap[scaff1Name]
+    allScaff2Hits = scaffMap[scaff2Name]
+    for scaff1Hit in allScaff1Hits:
+        scaff1RefCoord = scaff1Hit[0]
+        scaff1QueryCoord = scaff1Hit[2]
+        for scaff2Hit in allScaff2Hits:
+            scaff2RefCoord = scaff2Hit[0]
+            scaff2QueryCoord = scaff2Hit[2]
+            if isIntersect(scaff1RefCoord, scaff1QueryCoord,\
+                               scaff2RefCoord, scaff2QueryCoord):
+                #intersection found
+                intersectionCount += 1
+    return intersectionCount
+    
+
 #return the transformed coordinate map from ref to query
 def genCoordsRefQuery(cols, coordScaffsDict):
 
