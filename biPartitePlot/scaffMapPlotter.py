@@ -13,22 +13,30 @@ class PlotConsts:
 #generate the plot for passed scaffMap
 #scaffMap dict, scaffName -> [(refTranslatedCoord, queryScaffName,\
 #                queryTranslatedCoord, refMatchedLen), ...]
-def generatePlot(scaffMap):
+def generatePlot(scaffMap, minMatchedLen, outFile):
+   
     for scaffName, mappingInfos in scaffMap.iteritems():
-        print 'plotting ' + scaffName
+        #print 'plotting ' + scaffName
         for mapInfo in mappingInfos:
-            #join (0, mapInfo[0]) -> (0+XSep, mapInfo[2])
-            vertices = np.array([\
-                    [0, mapInfo[0]],\
-                        [0+PlotConsts.XSep, mapInfo[2]]\
-                        ])
             refMatchedLen = mapInfo[3]
-            if refMatchedLen > 50000:
-                color = 'r'
-            elif refMatchedLen > 5000:
-                color = 'g'
-            else:
-                color = 'b'
-            plot(vertices[:,0], vertices[:,1], color = color)
+            if refMatchedLen > minMatchedLen:
+                #join (0, mapInfo[0]) -> (0+XSep, mapInfo[2])
+                vertices = np.array([\
+                        [0, mapInfo[0]],\
+                            [0+PlotConsts.XSep, mapInfo[2]]\
+                            ])
+
+                if refMatchedLen > 50000:
+                    color = 'r'
+                elif refMatchedLen > 25000:
+                    color = 'g'
+                elif refMatchedLen > 15000: 
+                    color = 'b'
+                else:
+                    color = 'm'
+
+                #print vertices
+                plot(vertices[:,0], vertices[:,1], color = color)
         
-    show()
+    #show()
+    savefig(outFile)

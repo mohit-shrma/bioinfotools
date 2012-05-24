@@ -6,9 +6,9 @@ eventually be plotted """
 
 #class to hold some constants, which won't be change while executing
 class ScaffConstants:
-    #TODO:
+
     #factor specifying how many bases forms a dot
-    ScaleFactor = 20000
+    ScaleFactor = 1
 
     #columns specifying start and end positions of matching regions of ref
     RefStartCol = 5 - 1
@@ -49,6 +49,7 @@ def getConvScaffCoordRange(listScaffsRange):
                                /ScaffConstants.ScaleFactor)
         coordScaffsDict[scaffName] = (newStart, newEnd, len)
         prevEnd = newEnd
+    print scaffName, prevEnd
     return coordScaffsDict
 
 
@@ -117,11 +118,13 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path):
     #get scaffold details for first sequence
     listScaffs1Range = getScaffsDetails(scaffsFile1Path)
     coordScaff1Dict = getConvScaffCoordRange(listScaffs1Range)
-
+    #print coordScaff1Dict
+    
     #get scaffold details for second sequence
     listScaffs2Range = getScaffsDetails(scaffsFile2Path)
     coordScaff2Dict = getConvScaffCoordRange(listScaffs2Range)
-
+    #print coordScaff2Dict
+    
     #combine the coordinate infos from both of above sequence
     coordScaffDict = dict(coordScaff1Dict.items() + coordScaff2Dict.items()) 
 
@@ -133,9 +136,7 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path):
             if os.path.isfile(filePath):
                 (refScaffName, mappingInfos) = getScaffMappedList(filePath,\
                                                                  coordScaffDict)
-                scaffMap[refScaffName] = mappingInfos
+                if refScaffName:
+                    scaffMap[refScaffName] = mappingInfos
     return scaffMap
         
-
-
-

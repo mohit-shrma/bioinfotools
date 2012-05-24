@@ -5,7 +5,7 @@ import scaffMapPlotter
 
 
 def main():
-    if len(sys.argv) >= 3:
+    if len(sys.argv) >= 6:
 
         #scaffolds dir
         scaffsDir = os.path.abspath(sys.argv[1])
@@ -17,12 +17,18 @@ def main():
         #file path of stats on query
         scaffs2FilePath = os.path.abspath(sys.argv[3])
 
+        #min match length
+        minMatchLen = int(sys.argv[4])
+
+        #plot outputfile
+        plotOutFilePath = os.path.abspath(sys.argv[5])
+                
         #get scaff map for the passed sequences
         scaffMap = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
                                                             scaffs1FilePath,\
                                                             scaffs2FilePath)
         #generate plot for scaff map
-        scaffMapPlotter.generatePlot(scaffMap)
+        scaffMapPlotter.generatePlot(scaffMap, minMatchLen, plotOutFilePath)
         
     else:
         print 'err: files missin'
