@@ -28,7 +28,7 @@ def main():
                                                             scaffs1FilePath,\
                                                             scaffs2FilePath)
         #do iteration of plot and flip
-        scaffCoordsConv.iteratePlotFlip(scaffMap, refListRange, coordScaffDict)
+        scaffCoordsConv.iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchLen)
         
         #generate plot for scaff map
         #scaffMapPlotter.generatePlot(scaffMap, minMatchLen, plotOutFilePath)

@@ -4,6 +4,11 @@ import scaffMapPlotter
 
 """convert scaffold mapping to another scaffold coordinates mapping which can
 eventually be plotted """
+class MyError(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
 
 #class to hold some constants, which won't be change while executing
 class ScaffConstants:
@@ -58,7 +63,7 @@ def getNewCoordsAfterSwap(scaff1Name, scaff2Name, oldListScaffsRange):
     scaff1Ind = -1
     scaff2Ind = -1
     i = 0
-    print 'swapping ...', scaff1Name, scaff2Name 
+    #print 'swapping ...', scaff1Name, scaff2Name 
     newCoordScaffsDict = {}
     for i in range(len(oldListScaffsRange)):
         if scaff1Name ==  oldListScaffsRange[i][0]:
@@ -73,10 +78,10 @@ def getNewCoordsAfterSwap(scaff1Name, scaff2Name, oldListScaffsRange):
             = oldListScaffsRange[scaff2Ind], oldListScaffsRange[scaff1Ind]
         #and get the new mappings based on new coordinate scale
         newCoordScaffsDict = getConvScaffCoordRange(oldListScaffsRange)
-        print 'newcoord dict', newCoordScaffsDict
+        #print 'newcoord dict', newCoordScaffsDict
         if len(newCoordScaffsDict) == 0:
             print 'some error occured while generating the new coordinates'
-    print oldListScaffsRange
+    #print oldListScaffsRange
     return (oldListScaffsRange, newCoordScaffsDict)
 
 
@@ -120,19 +125,19 @@ def performPairwiseScaffFlips(scaffMap, oldListScaffRange, oldCoordScaffsDict):
             print 'new intersection count: ', newIntersectCount
 
             if newIntersectCount < intersectCount:
-                print '********************** applying update ******************'
+                #print '********************** applying update ******************'
                 #for this pair we saw some decrease in count of intersection
                 oldListScaffRange = newListScaffRange
-                print 'b4 update: ', oldCoordScaffsDict
+                #print 'b4 update: ', oldCoordScaffsDict
                 oldCoordScaffsDict.update(newCoordScaffsDict)
-                print 'aftr update', oldCoordScaffsDict
+                #print 'aftr update', oldCoordScaffsDict
                 scaffMap[prevScaffName]  = newPrevMappingInfo
                 scaffMap[currScaffName] = newCurrMappingInfo
                 validate(scaffMap,oldListScaffRange,oldCoordScaffsDict)
         prevScaffName = currScaffName
-        print 'b4 validate lo: oldCoordScaffsDict', oldCoordScaffsDict
-        print 'b4 validate lo: oldListScaffRange', oldListScaffRange
-        print 'b4 validate lo: scaffMap', scaffMap 
+        #print 'b4 validate lo: oldCoordScaffsDict', oldCoordScaffsDict
+        #print 'b4 validate lo: oldListScaffRange', oldListScaffRange
+        #print 'b4 validate lo: scaffMap', scaffMap 
         validate(scaffMap, oldListScaffRange, oldCoordScaffsDict)
     return (oldListScaffRange, oldCoordScaffsDict, scaffMap)  
 
@@ -142,12 +147,26 @@ def countTotalNumIntersections(listScaffRange, scaffMap):
     totalIntersectCount = 0
     for i in range(len(listScaffRange)):
         currScaffName = listScaffRange[i][0]
+        #add self intersection with in scaffold
+        totalIntersectCount += countSelfIntersections(currScaffName, scaffMap)
         for j in range(i+1, len(listScaffRange)):
             nextScaffName = listScaffRange[j][0]
             #count intersection b/w currScaff n prevScaff
             totalIntersectCount += countIntersect(currScaffName, nextScaffName,\
                                                       scaffMap)
     return totalIntersectCount
+
+def countSelfIntersections(scaffName, scaffMap):
+    totalIntersectCount = 0
+    mappingInfos = scaffMap[scaffName]
+    prevMapInfo = mappingInfos[0]
+    for currMapInfo in mappingInfos[1:]:
+        if isIntersect(prevMapInfo[0], prevMapInfo[2],\
+                         currMapInfo[0], currMapInfo[2]):
+            totalIntersectCount += 1
+        prevMapInfo = currMapInfo
+    return totalIntersectCount
+    
 
 
 #based on the new mapping transformed the old matching regions of scaffold 
@@ -156,13 +175,13 @@ def getNewScafMappingInfo(scaffName, oldCoordScaffsDict, newCoordScaffsDict,\
     oldStart = oldCoordScaffsDict[scaffName][0]
     newStart = newCoordScaffsDict[scaffName][0]
     mappingInfosDup = []
-    print 'b4 relayout ', scaffName, mappingInfos, 'oldstart: ', oldStart, 'newstart: ', newStart
+    #print 'b4 relayout ', scaffName, mappingInfos, 'oldstart: ', oldStart, 'newstart: ', newStart
     for i in range(len(mappingInfos)):
         refTranslatedCoord = mappingInfos[i][0]
         refTranslatedCoord = refTranslatedCoord - oldStart + newStart
         mappingInfosDup.append((refTranslatedCoord, mappingInfos[i][1],\
                                   mappingInfos[i][2], mappingInfos[i][3]))
-    print 'aftr relayout ', scaffName, mappingInfos
+    #print 'aftr relayout ', scaffName, mappingInfos
     return mappingInfosDup
 
 
@@ -172,8 +191,10 @@ def isIntersect(y1, y2, y3, y4):
     diff1 = y1- y3
     diff2 = y2 - y4
     if (diff1*diff2) >= 0:
+        #print 'not intersect: ', y1, y2, y3, y4
         return False
     else:
+        #print 'intersect: ', y1, y2, y3, y4
         return True
     
 
@@ -297,10 +318,10 @@ def iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchedLen = 0):
         (refListRange, coordScaffDict, scaffMap) = performPairwiseScaffFlips(\
             scaffMap, refListRange, coordScaffDict)
         
-        print 'aftr calling...'
-        print scaffMap
-        print refListRange
-        print coordScaffDict
+        #print 'aftr calling...'
+        #print scaffMap
+        #print refListRange
+        #print coordScaffDict
 
         validate(scaffMap,refListRange,coordScaffDict)
         print "num intersection: ", countTotalNumIntersections(refListRange, scaffMap)
@@ -311,7 +332,8 @@ def validate(scaffMap,refListRange,coordScaffDict):
         for mappingInfo in mappingInfos:
             if mappingInfo[0] < coordScaffDict[scaffName][0]:
                 print scaffName, mappingInfo[0], '<', coordScaffDict[scaffName][0], coordScaffDict[scaffName][1]
+                raise MyError('oops! <')
             elif mappingInfo[0] > coordScaffDict[scaffName][1]:
                 print scaffName, mappingInfo[0], '>',  coordScaffDict[scaffName][0],  coordScaffDict[scaffName][1]
-                
+                raise MyError('oops! >')
 

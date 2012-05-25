@@ -16,7 +16,7 @@ class PlotConsts:
 def generatePlot(scaffMap, minMatchedLen, outFile = ''):
    
     for scaffName, mappingInfos in scaffMap.iteritems():
-        print 'plotting ' + scaffName
+        #print 'plotting ' + scaffName, 'minMatchedLen: ' + str(minMatchedLen)
         for mapInfo in mappingInfos:
             refMatchedLen = mapInfo[3] 
             if refMatchedLen > minMatchedLen:
