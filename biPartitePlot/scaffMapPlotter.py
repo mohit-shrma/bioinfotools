@@ -13,10 +13,10 @@ class PlotConsts:
 #generate the plot for passed scaffMap
 #scaffMap dict, scaffName -> [(refTranslatedCoord, queryScaffName,\
 #                queryTranslatedCoord, refMatchedLen), ...]
-def generatePlot(scaffMap, minMatchedLen, outFile):
+def generatePlot(scaffMap, minMatchedLen, outFile = ''):
    
     for scaffName, mappingInfos in scaffMap.iteritems():
-        #print 'plotting ' + scaffName
+        print 'plotting ' + scaffName
         for mapInfo in mappingInfos:
             refMatchedLen = mapInfo[3] 
             if refMatchedLen > minMatchedLen:
@@ -37,6 +37,8 @@ def generatePlot(scaffMap, minMatchedLen, outFile):
 
                 #print vertices
                 plot(vertices[:,0], vertices[:,1], color = color)
-        
-    #show()
-    savefig(outFile)
+
+    if not outFile:
+        show()
+    else:
+        savefig(outFile)

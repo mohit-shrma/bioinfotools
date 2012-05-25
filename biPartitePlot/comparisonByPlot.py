@@ -24,11 +24,14 @@ def main():
         plotOutFilePath = os.path.abspath(sys.argv[5])
                 
         #get scaff map for the passed sequences
-        scaffMap = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
+        (scaffMap, refListRange, coordScaffDict) = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
                                                             scaffs1FilePath,\
                                                             scaffs2FilePath)
+        #do iteration of plot and flip
+        scaffCoordsConv.iteratePlotFlip(scaffMap, refListRange, coordScaffDict)
+        
         #generate plot for scaff map
-        scaffMapPlotter.generatePlot(scaffMap, minMatchLen, plotOutFilePath)
+        #scaffMapPlotter.generatePlot(scaffMap, minMatchLen, plotOutFilePath)
         
     else:
         print 'err: files missin'
