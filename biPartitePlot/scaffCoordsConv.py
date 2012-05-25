@@ -172,9 +172,9 @@ def isIntersect(y1, y2, y3, y4):
     diff1 = y1- y3
     diff2 = y2 - y4
     if (diff1*diff2) >= 0:
-        return True
-    else:
         return False
+    else:
+        return True
     
 
 #count intersection between two scaffold
