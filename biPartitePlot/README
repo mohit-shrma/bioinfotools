@@ -1,0 +1,6 @@
+comntains plot to plot bipartite graph
+e.g. to run
+python    comparisonByPlot.py bdir/ bdir/AScaff bdir/BScaff 0 out.png
+
+where bdir contains blast results, 
+ASCaff, BScaff contains scaffolds length info
