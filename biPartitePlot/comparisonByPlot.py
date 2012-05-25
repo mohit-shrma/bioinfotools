@@ -26,7 +26,8 @@ def main():
         #get scaff map for the passed sequences
         (scaffMap, refListRange, coordScaffDict) = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
                                                             scaffs1FilePath,\
-                                                            scaffs2FilePath)
+                                                            scaffs2FilePath,\
+                                                                minMatchLen)
         #do iteration of plot and flip
         scaffCoordsConv.iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchLen)
         

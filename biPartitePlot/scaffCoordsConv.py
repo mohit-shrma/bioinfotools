@@ -158,6 +158,8 @@ def countTotalNumIntersections(listScaffRange, scaffMap):
 
 def countSelfIntersections(scaffName, scaffMap):
     totalIntersectCount = 0
+    if scaffName not in scaffMap:
+        return totalIntersectCount
     mappingInfos = scaffMap[scaffName]
     prevMapInfo = mappingInfos[0]
     for currMapInfo in mappingInfos[1:]:
@@ -203,18 +205,19 @@ def isIntersect(y1, y2, y3, y4):
 #    queryTranslatedCoord, refMatchedLen), ... ]
 def countIntersect(scaff1Name, scaff2Name, scaffMap):
     intersectionCount = 0
-    allScaff1Hits = scaffMap[scaff1Name]
-    allScaff2Hits = scaffMap[scaff2Name]
-    for scaff1Hit in allScaff1Hits:
-        scaff1RefCoord = scaff1Hit[0]
-        scaff1QueryCoord = scaff1Hit[2]
-        for scaff2Hit in allScaff2Hits:
-            scaff2RefCoord = scaff2Hit[0]
-            scaff2QueryCoord = scaff2Hit[2]
-            if isIntersect(scaff1RefCoord, scaff1QueryCoord,\
+    if scaff1Name in scaffMap and scaff2Name in scaffMap:
+        allScaff1Hits = scaffMap[scaff1Name]
+        allScaff2Hits = scaffMap[scaff2Name]
+        for scaff1Hit in allScaff1Hits:
+            scaff1RefCoord = scaff1Hit[0]
+            scaff1QueryCoord = scaff1Hit[2]
+            for scaff2Hit in allScaff2Hits:
+                scaff2RefCoord = scaff2Hit[0]
+                scaff2QueryCoord = scaff2Hit[2]
+                if isIntersect(scaff1RefCoord, scaff1QueryCoord,\
                                scaff2RefCoord, scaff2QueryCoord):
-                #intersection found
-                intersectionCount += 1
+                    #intersection found
+                    intersectionCount += 1
     return intersectionCount
     
 
@@ -243,7 +246,7 @@ def genCoordsRefQuery(cols, coordScaffsDict):
     
 
 #tranform the mapping from ref to query, in new coords format
-def getScaffMappedList(scaffMapFilePath, coordScaffsDict):
+def getScaffMappedList(scaffMapFilePath, coordScaffsDict, minMatchedLen = 5000):
     mappingInfos = []
     refScaffName = ''
     try:
@@ -252,6 +255,9 @@ def getScaffMappedList(scaffMapFilePath, coordScaffsDict):
         for line in scaffMapFile:
             cols = (line.rstrip('\n')).split()
             coords = genCoordsRefQuery(cols, coordScaffsDict)
+            if coords[3] < minMatchedLen:
+                #no need to add as it is less than minimum matched len specified
+                continue
             if not refScaffName:
                 refScaffName = cols[ScaffConstants.RefNameCol]
             mappingInfos.append(coords)
@@ -276,7 +282,8 @@ def getScaffsDetails(scaffsFilePath):
         print "I/O error({0}): {1}".format(errno, strerror)
     return listScaffsRange
 
-def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path):
+def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
+                                 minMatchLen):
 
     #dictionary to keep scaffold mapping details
     scaffMap = {}
@@ -294,25 +301,33 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path):
     #combine the coordinate infos from both of above sequence
     coordScaffDict = dict(coordScaff1Dict.items() + coordScaff2Dict.items()) 
 
+    numCounter = 0
+    
     #parse the directory to generate the hit maps for each scaffold
     dirContents = os.listdir(scaffDir)
     for fileName in dirContents:
         if fileName.endswith('fasta.out'):
+            #numCounter += 1
             filePath = os.path.join(scaffDir, fileName)
             if os.path.isfile(filePath):
-                (refScaffName, mappingInfos) = getScaffMappedList(filePath,\
-                                                                 coordScaffDict)
+                (refScaffName, mappingInfos) = getScaffMappedList(\
+                    filePath,\
+                        coordScaffDict,\
+                        minMatchLen)
                 if refScaffName:
                     scaffMap[refScaffName] = mappingInfos
+            #if numCounter == 10:
+            #    break
                 
     return (scaffMap, listScaffs1Range, coordScaffDict)
 
 #iterate  plots and flips
 def iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchedLen = 0):
     for i in range(5):
+        print "num intersection: ", countTotalNumIntersections(refListRange, scaffMap)
+
         #plot
         scaffMapPlotter.generatePlot(scaffMap, minMatchedLen)
-
 
         #flip and reorder
         (refListRange, coordScaffDict, scaffMap) = performPairwiseScaffFlips(\
@@ -324,7 +339,7 @@ def iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchedLen = 0):
         #print coordScaffDict
 
         validate(scaffMap,refListRange,coordScaffDict)
-        print "num intersection: ", countTotalNumIntersections(refListRange, scaffMap)
+
 
 
 def validate(scaffMap,refListRange,coordScaffDict):
