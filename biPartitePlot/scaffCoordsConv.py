@@ -13,6 +13,9 @@ class MyError(Exception):
 #class to hold some constants, which won't be change while executing
 class ScaffConstants:
 
+    #MAX_ITERATION_COUNTER
+    MAX_ITERATION_COUNTER = 50
+    
     #factor specifying how many bases forms a dot
     ScaleFactor = 1
 
@@ -354,10 +357,9 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
             #numCounter += 1
             filePath = os.path.join(scaffDir, fileName)
             if os.path.isfile(filePath):
-                (refScaffName, mappingInfos) = getScaffMappedList(\
-                    filePath,\
-                        coordScaffDict,\
-                        minMatchLen)
+                (refScaffName, mappingInfos) = getScaffMappedList(filePath,\
+                                                                      coordScaffDict,\
+                                                                      minMatchLen)
                 if refScaffName:
                     scaffMap[refScaffName] = mappingInfos
             #if numCounter == 10:
@@ -367,12 +369,22 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
 
 #iterate  plots and flips
 def iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchedLen = 0):
-    for i in range(5):
-        print "Total intersections: ", countTotalNumIntersections(refListRange, scaffMap)
+
+    lastInterSectionCount = -1 
+    iterationCounter = 0
+    while iterationCounter < ScaffConstants.MAX_ITERATION_COUNTER:
+
+        totalIntersections = countTotalNumIntersections(refListRange, scaffMap)
+        print "Total intersections: ", totalIntersections
 
         #plot
         scaffMapPlotter.generatePlot(scaffMap, minMatchedLen)
 
+        if totalIntersections == lastInterSectionCount:
+            break
+        
+        lastInterSectionCount = totalIntersections
+        
         #flip and reorder
         (refListRange, coordScaffDict, scaffMap) = performPairwiseScaffFlips(\
             scaffMap, refListRange, coordScaffDict)
@@ -383,7 +395,7 @@ def iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchedLen = 0):
         #print coordScaffDict
 
         validate(scaffMap,refListRange,coordScaffDict)
-
+        iterationCounter += 1
 
 
 def validate(scaffMap,refListRange,coordScaffDict):
