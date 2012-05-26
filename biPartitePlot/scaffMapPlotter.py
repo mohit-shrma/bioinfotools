@@ -1,6 +1,7 @@
 from pylab import *
 import numpy as np
 from matplotlib.path import Path
+import coordsConverter
 
 class PlotConsts:
 
@@ -35,10 +36,36 @@ def generatePlot(scaffMap, minMatchedLen, outFile = ''):
                 else:
                     color = 'm'
 
-                #print vertices
                 plot(vertices[:,0], vertices[:,1], color = color)
 
     if not outFile:
         show()
     else:
         savefig(outFile)
+
+
+def plotFromLists(nodesA, nodesB, adjListA):
+    nodesACoord = coordsConverter.getCoordinatesDict(nodesA)
+    nodesBCoord = coordsConverter.getCoordinatesDict(nodesB)
+    #print adjListA
+    #print nodesA
+    #print nodesACoord
+    #print nodesB
+    #print nodesBCoord
+    intersectionCount, numLines = coordsConverter.getIntersectionCount(nodesA,\
+                                                                   nodesACoord,\
+                                                                   nodesBCoord,\
+                                                                   adjListA)
+    print 'intersection count: ', intersectionCount
+    print 'num Lines: ', numLines
+    for node in nodesA:
+        midPtNodeA = (nodesACoord[node][0] + nodesACoord[node][1])/2
+        for neighbor in adjListA[node]:
+            midPtNeighborB = (nodesBCoord[neighbor][0]\
+                                  + nodesBCoord[neighbor][1])/2
+            vertices = np.array([[0, midPtNodeA],\
+                                     [0+PlotConsts.XSep, midPtNeighborB]])
+            plot(vertices[:,0], vertices[:,1], color = 'r')
+    ymin, ymax = ylim()   # return the current ylim
+    ylim(0, ymax)
+    show()

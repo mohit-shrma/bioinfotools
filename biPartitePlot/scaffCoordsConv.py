@@ -1,6 +1,7 @@
 import math
 import os
 import scaffMapPlotter
+import crossingMinimization
 
 """convert scaffold mapping to another scaffold coordinates mapping which can
 eventually be plotted """
@@ -60,184 +61,6 @@ def getConvScaffCoordRange(listScaffsRange):
     print scaffName, prevEnd
     return coordScaffsDict
 
-
-def getNewCoordsAfterSwap(scaff1Name, scaff2Name, oldListScaffsRange):
-    scaff1Ind = -1
-    scaff2Ind = -1
-    i = 0
-    #create a copy of list and manipulate it not the original list
-    newListScaffsRange = oldListScaffsRange[:]
-    #print 'swapping ...', scaff1Name, scaff2Name 
-    newCoordScaffsDict = {}
-    for i in range(len(oldListScaffsRange)):
-        if scaff1Name ==  oldListScaffsRange[i][0]:
-            scaff1Ind = i
-        if scaff2Name ==  oldListScaffsRange[i][0]:
-            scaff2Ind = i
-        if scaff1Ind != -1 and scaff2Ind != -1:
-            break;
-    if scaff1Ind != -1 and scaff2Ind != -1:
-        #swap these indices and make new list range
-        newListScaffsRange[scaff1Ind], newListScaffsRange[scaff2Ind]\
-            = newListScaffsRange[scaff2Ind], newListScaffsRange[scaff1Ind]
-
-        #and get the new mappings based on new coordinate scale
-        newCoordScaffsDict = getConvScaffCoordRange(newListScaffsRange)
-        #print 'newcoord dict ' + scaff1Name, newCoordScaffsDict[scaff1Name], 
-        #print 'newcoord dict ' + scaff2Name, newCoordScaffsDict[scaff1Name]
-        
-        if len(newCoordScaffsDict) == 0:
-            print 'some error occured while generating the new coordinates'
-    #print oldListScaffsRange
-    return (newListScaffsRange, newCoordScaffsDict)
-
-
-def displayCoordFromMap(scaffName, scaffMap):
-    mapInfos = scaffMap[scaffName]
-    ys = []
-    for mapInfo in mapInfos:
-        ys.append(mapInfo[0])
-        if len(ys) > 4:
-            break
-    print scaffName + ' ys: ', ys
-    
-            
-
-#parse the pairwise scaffolds
-#list scaff range is for scaffolds for one sequence
-def performPairwiseScaffFlips(scaffMap, oldListScaffRange, oldCoordScaffsDict):
-    scaffNameKeys = scaffMap.keys()
-    #scaffNameKeys.sort()
-    #print scaffNameKeys
-    #to maintain the previous scaffold
-    prevScaffName = scaffNameKeys[0]
-    
-    for currScaffName in scaffNameKeys[1:]:
-        intersectCount = countIntersect(prevScaffName, currScaffName, scaffMap)
-        if intersectCount > 0:
-            print 'intersection found: ', intersectCount, prevScaffName, currScaffName
-
-            #swap scaffs
-            newListScaffRange, newCoordScaffsDict = getNewCoordsAfterSwap(\
-                prevScaffName, currScaffName, oldListScaffRange)
-            
-            #get new mapping info after swap
-            newPrevMappingInfo = getNewScafMappingInfo(prevScaffName,\
-                                                           oldCoordScaffsDict, \
-                                                           newCoordScaffsDict,\
-                                                           scaffMap[prevScaffName])
-            newCurrMappingInfo = getNewScafMappingInfo(currScaffName,\
-                                                           oldCoordScaffsDict, \
-                                                           newCoordScaffsDict,\
-                                                           scaffMap[currScaffName])
-            newCustomMap = { prevScaffName: newPrevMappingInfo,\
-                                currScaffName: newCurrMappingInfo }
-            
-            #get the intersection count after swap
-            newIntersectCount = countIntersect(prevScaffName, currScaffName,\
-                                                   newCustomMap)
-            print 'old intersection count: ', intersectCount
-            print 'new intersection count: ', newIntersectCount
-
-            if newIntersectCount < intersectCount:
-                #for this pair we saw some decrease in count of intersection
-                oldListScaffRange = newListScaffRange
-                scaffMap = getFullNewMappingInfo(oldCoordScaffsDict, newCoordScaffsDict, scaffMap)
-                oldCoordScaffsDict.update(newCoordScaffsDict)
-                validate(scaffMap,oldListScaffRange,oldCoordScaffsDict)
-                #change prevScaffName to curr
-                #as it has taken the place of currScaff
-                currScaffName = prevScaffName
-        prevScaffName = currScaffName
-        validate(scaffMap, oldListScaffRange, oldCoordScaffsDict)
-    return (oldListScaffRange, oldCoordScaffsDict, scaffMap)  
-
-
-#count the total number of intersections
-def countTotalNumIntersections(listScaffNames, scaffMap):
-    totalIntersectCount = 0
-    for i in range(len(listScaffNames)):
-        currScaffName = listScaffNames[i]
-        #add self intersection with in scaffold
-        totalIntersectCount += countSelfIntersections(currScaffName, scaffMap)
-        for j in range(i+1, len(listScaffNames)):
-            nextScaffName = listScaffNames[j]
-            #count intersection b/w currScaff n prevScaff
-            totalIntersectCount += countIntersect(currScaffName, nextScaffName,\
-                                                      scaffMap)
-    return totalIntersectCount
-
-def countSelfIntersections(scaffName, scaffMap):
-    totalIntersectCount = 0
-    if scaffName not in scaffMap:
-        return totalIntersectCount
-    mappingInfos = scaffMap[scaffName]
-    prevMapInfo = mappingInfos[0]
-    for currMapInfo in mappingInfos[1:]:
-        if isIntersect(prevMapInfo[0], prevMapInfo[2],\
-                         currMapInfo[0], currMapInfo[2]):
-            totalIntersectCount += 1
-        prevMapInfo = currMapInfo
-    return totalIntersectCount
-    
-##get full new mapping info, update all coordinates after a swap of scaffolds
-def getFullNewMappingInfo(oldCoordScaffsDict, newCoordScaffsDict, scaffMap):
-    for scaffName, mappingInfos in scaffMap.iteritems():
-        scaffMap[scaffName] = getNewScafMappingInfo(scaffName,\
-                                                        oldCoordScaffsDict,\
-                                                        newCoordScaffsDict,\
-                                                        mappingInfos)
-    return scaffMap
-
-#based on the new mapping transformed the old matching regions of scaffold 
-def getNewScafMappingInfo(scaffName, oldCoordScaffsDict, newCoordScaffsDict,\
-                              mappingInfos ):
-    oldStart = oldCoordScaffsDict[scaffName][0]
-    newStart = newCoordScaffsDict[scaffName][0]
-    mappingInfosDup = []
-    #print 'b4 relayout ', scaffName, mappingInfos, 'oldstart: ', oldStart, 'newstart: ', newStart
-    for i in range(len(mappingInfos)):
-        refTranslatedCoord = mappingInfos[i][0]
-        refTranslatedCoord = refTranslatedCoord - oldStart + newStart
-        mappingInfosDup.append((refTranslatedCoord, mappingInfos[i][1],\
-                                  mappingInfos[i][2], mappingInfos[i][3]))
-    #print 'aftr relayout ', scaffName, mappingInfos
-    return mappingInfosDup
-
-
-#intersection of two lines given their end y's
-#(y1,y2) are y's of one line endpoint ||ly (y3, y4)
-def isIntersect(y1, y2, y3, y4):
-    diff1 = y1- y3
-    diff2 = y2 - y4
-    if (diff1*diff2) >= 0:
-        #print 'not intersect: ', y1, y2, y3, y4
-        return False
-    else:
-        #print 'intersect: ', y1, y2, y3, y4
-        return True
-    
-
-#count intersection between two scaffold
-#scaffMap: name -> [(refTranslatedCoord, queryScaffName, \
-#    queryTranslatedCoord, refMatchedLen), ... ]
-def countIntersect(scaff1Name, scaff2Name, scaffMap):
-    intersectionCount = 0
-    if scaff1Name in scaffMap and scaff2Name in scaffMap:
-        allScaff1Hits = scaffMap[scaff1Name]
-        allScaff2Hits = scaffMap[scaff2Name]
-        for scaff1Hit in allScaff1Hits:
-            scaff1RefCoord = scaff1Hit[0]
-            scaff1QueryCoord = scaff1Hit[2]
-            for scaff2Hit in allScaff2Hits:
-                scaff2RefCoord = scaff2Hit[0]
-                scaff2QueryCoord = scaff2Hit[2]
-                if isIntersect(scaff1RefCoord, scaff1QueryCoord,\
-                               scaff2RefCoord, scaff2QueryCoord):
-                    #intersection found
-                    intersectionCount += 1
-    return intersectionCount
-    
 
 #return the transformed coordinate map from ref to query
 def genCoordsRefQuery(cols, coordScaffsDict):
@@ -317,11 +140,15 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
     listScaffs2Range = (getScaffsDetails(scaffsFile2Path))
     coordScaff2Dict = getConvScaffCoordRange(listScaffs2Range)
     #print coordScaff2Dict
-    
+
+
+    coordRefDict = coordScaff1Dict
+    coordQueryDict = coordScaff2Dict
     #combine the coordinate infos from both of above sequence
     coordScaffDict = dict(coordScaff1Dict.items() + coordScaff2Dict.items()) 
 
-    numCounter = 0
+
+    totalHits = 0
     
     #parse the directory to generate the hit maps for each scaffold
     dirContents = os.listdir(scaffDir)
@@ -334,107 +161,48 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
                                                                       minMatchLen)
                 if refScaffName:
                     scaffMap[refScaffName] = mappingInfos
-                
-    return (scaffMap, listScaffs1Range, coordScaffDict)
+                    totalHits += len(mappingInfos)
+    print 'total hits: ', totalHits
+    return scaffMap
 
-        
-#filter out all list ranges for specific scaffNames
-def filterListRange(listRange, scaffNames):
-    filteredListRange = []
-    for scaffName, scaffLen in listRange:
-        if scaffName in scaffNames:
-            filteredListRange.append((scaffName, scaffLen))
-    return filteredListRange
-
-
-
-#filter out all key/values for specific scaffNames        
-def filterScaffMap(scaffMap, scaffNames):
-    filteredScaffMap = {}
-    for scaffName in scaffNames:
-        if scaffName in scaffMap:
-            filteredScaffMap[scaffName] = scaffMap[scaffName]
-    return filteredScaffMap
-
-
-#isolate intersecting scaffs
-def getIntersectingScaffsNNot(refListRange, scaffMap):
-    intersectingScaffs = []
-    nonIntersectingScaffs = []
-    prevScaffName = refListRange[0][0]
-    for currScaffName, currLen in refListRange[1:]:
-        if countIntersect(prevScaffName, currScaffName, scaffMap) > 0:
-            if prevScaffName not in intersectingScaffs:
-                intersectingScaffs.append(prevScaffName)
-            if currScaffName not in intersectingScaffs:
-                intersectingScaffs.append(currScaffName)    
-        prevScaffName = currScaffName
-    for scaffName, scaffLen in refListRange:
-        if scaffName not in intersectingScaffs:
-            nonIntersectingScaffs.append(scaffName)
-    return intersectingScaffs, nonIntersectingScaffs
-
-
-#iterate  plots and flips
-def iteratePlotFlip(scaffMap, refListRange, coordScaffDict, minMatchedLen = 0):
-
-    lastInterSectionCount = -1 
-    iterationCounter = 0
-
-    while iterationCounter < ScaffConstants.MAX_ITERATION_COUNTER:
-
-
-        refListNames = list(zip(*refListRange)[0])
-        totalIntersections = countTotalNumIntersections(refListNames, scaffMap)
-        print "Total intersections: ", totalIntersections
-
-
-        if totalIntersections == lastInterSectionCount:
-            break
-        
-        lastInterSectionCount = totalIntersections
-        
-        #flip and reorder
-        (refListRange, coordScaffDict, scaffMap) = performPairwiseScaffFlips(\
-            scaffMap, refListRange, coordScaffDict)
-        
-        #print 'aftr calling...'
-        #print scaffMap
-        #print refListRange
-        #print coordScaffDict
-
-        validate(scaffMap,refListRange,coordScaffDict)
-        iterationCounter += 1
-
-    #num of lines or num of hits
-    print 'num of lines/hits: ', len(scaffMap)    
-    
-    #plot the final converged minimum intersection values
-    scaffMapPlotter.generatePlot(scaffMap, minMatchedLen)
-
-    intersectingScaffs, nonIntersectingScaffs = \
-        getIntersectingScaffsNNot(refListRange, scaffMap)
-    
-    nonIntersectingScaffMap = filterScaffMap(scaffMap, nonIntersectingScaffs)
-    print 'non intersecting scaffs...', len(nonIntersectingScaffMap),\
-        countTotalNumIntersections(nonIntersectingScaffMap.keys(), nonIntersectingScaffMap)
-    #plot non intersecting scaffs
-    scaffMapPlotter.generatePlot(nonIntersectingScaffMap, minMatchedLen)
-
-    intersectingScaffMap = filterScaffMap(scaffMap, intersectingScaffs)
-    print 'intersecting scaffs...', len(intersectingScaffMap),\
-        countTotalNumIntersections(intersectingScaffMap.keys(), intersectingScaffMap)
-    
-    #plot intersecting scaffs
-    scaffMapPlotter.generatePlot(intersectingScaffMap, minMatchedLen)
-        
-def validate(scaffMap,refListRange,coordScaffDict):
-    for scaffName, mappingInfos in scaffMap.iteritems():
+def prepareAdjacencyLists(scaffMap):
+    scaffNames = scaffMap.keys()
+    refAdjacencyList = {}
+    queryAdjacencyList = {}
+    for refScaffName, mappingInfos in scaffMap.iteritems():
         for mappingInfo in mappingInfos:
-            if mappingInfo[0] < coordScaffDict[scaffName][0]:
-                print scaffName, mappingInfo[0], '<', coordScaffDict[scaffName][0], coordScaffDict[scaffName][1]
-                raise MyError('oops! <')
-            elif mappingInfo[0] > coordScaffDict[scaffName][1]:
-                print scaffName, mappingInfo[0], '>',  coordScaffDict[scaffName][0],  coordScaffDict[scaffName][1]
-                raise MyError('oops! >')
+            #mappingInfo[1] contains query scaffold name
+            queryScaffName = mappingInfo[1]
+
+            if refScaffName not in refAdjacencyList:
+                refAdjacencyList[refScaffName] = [queryScaffName]
+            else:
+                refAdjacencyList[refScaffName].append(queryScaffName)
+
+            if queryScaffName not in queryAdjacencyList:
+                queryAdjacencyList[queryScaffName] = [refScaffName]
+            else:
+                queryAdjacencyList[queryScaffName].append(refScaffName)
+    return refAdjacencyList, queryAdjacencyList
+
+
+#plot cross minimized by calling heuristics
+def plotCrossMinimizedOrdering(scaffMap):
+
+    refAdjacencyList, queryAdjacencyList = prepareAdjacencyLists(scaffMap)
+    refList = refAdjacencyList.keys()
+    refList.sort()
+    queryList = queryAdjacencyList.keys()
+    queryList.sort()
+    #print refList, queryList
+    scaffMapPlotter.plotFromLists(refList,\
+                                      queryList,\
+                                      refAdjacencyList)
+
+    refOrderList, queryOrderList =\
+        crossingMinimization.minimumCrossingOrdering(refAdjacencyList,\
+                                                         queryAdjacencyList)
+    #print refOrderList, queryOrderList
+    scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
+                                      refAdjacencyList)
 

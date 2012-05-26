@@ -13,11 +13,15 @@ def orderByBarycenterHeuristics(nodesList, nodesAdjacencyList,\
         neighborsRankSum = 0
         for neighbor in nodesAdjacencyList[node]:
             neighborsRankSum += neighborRankDict[neighbor]
-        nodesRank[node] = math.floor(\
-            float(neighborsRankSum)/len(nodesAdjacencyList[node]))
+        numNeighbors = len(nodesAdjacencyList[node])
+        if numNeighbors > 0:
+            nodesRank[node] = math.floor(float(neighborsRankSum)/numNeighbors)
+        else:
+            nodesRank[node] = 0
+    nodeRankTuples = [(node, nodesRank[node]) for node in nodesList]
     #sort according to nodes rank
-    sortedNodesRank = sorted(nodesRank.iteritems(), key=operator.itemgetter(1))
-    newNodesOrder = [ name for name, rank in sortedNodesRank]
+    nodeRankTuples = sorted(nodeRankTuples, key=lambda node: node[1])
+    newNodesOrder = [ name for name, rank in nodeRankTuples]
     return newNodesOrder
 
 #return a rank dictionary based on given node list, basically indices
@@ -50,7 +54,11 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
     #in which keys might be stored in adjDict
     refNodes = refAdjList.keys()
     queryNodes = queryAdjList.keys()
-
+    refNodes.sort()
+    queryNodes.sort()
+    #print 'refNodes: ', refNodes
+    #print 'queryNodes: ', queryNodes
+    
     #apply barycenter heuristices alternately on ref then query until their
     #position remains same in order
     positionChanged = True
