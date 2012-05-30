@@ -1,6 +1,7 @@
 #from pylab import *
 import numpy as np
 import coordsConverter
+import sys
 
 class PlotConsts:
 
@@ -55,9 +56,11 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
                                                                    nodesACoord,\
                                                                    nodesBCoord,\
                                                                    adjListA)
-    print 'Intersection count: ', minMatchLen, intersectionCount
-    print 'Num lines: ', minMatchLen, numLines
-    #on koronis no pylab module installed, take care of that too
+    print 'plotFromLists: Intersection count: ', minMatchLen, intersectionCount
+    print 'plotFromLists: Num lines: ', minMatchLen, numLines
+    sys.stdout.flush()
+    #on koronis no pylab module installed, take care of that too,
+    #so no plotting code
     """
     for node in nodesA:
         midPtNodeA = (nodesACoord[node][0] + nodesACoord[node][1])/2

@@ -2,6 +2,7 @@ import math
 import os
 import scaffMapPlotter
 import crossingMinimization
+import sys
 
 """convert contigs mapping to contigs coordinates
 which can eventually be plotted"""
@@ -191,8 +192,9 @@ def plotCrossMinimizedOrdering(contigMap, minMatchLen = 0):
     refList.sort()
     queryList = queryAdjacencyList.keys()
     queryList.sort()
-    print "Num ref contigs: ", minMatchLen, len(refList)
-    print "Num query contigs: ", minMatchLen,  len(queryList)
+    print "plotCross: Num ref contigs: ", minMatchLen, len(refList)
+    print "plotCross: Num query contigs: ", minMatchLen,  len(queryList)
+    sys.stdout.flush()
     #print refList, queryList
     scaffMapPlotter.plotFromLists(refList,\
                                       queryList,\

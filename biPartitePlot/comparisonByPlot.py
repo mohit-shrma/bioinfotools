@@ -56,7 +56,7 @@ def main():
         #contigs map file path
         contigsFilePath = os.path.abspath(sys.argv[1])
 
-        minMatchLenSeq = [4000, 3000, 2000, 1000, 500]
+        minMatchLenSeq = [4000]
 
         print 'calling child contigs processing workers'
 
