@@ -52,6 +52,8 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
     #print nodesACoord
     #print nodesB
     #print nodesBCoord
+    print 'made nodesACoord, nodesBCoord', len(nodesACoord), len(nodesBCoord)
+    sys.stdout.flush()
     intersectionCount, numLines = coordsConverter.getIntersectionCount(nodesA,\
                                                                    nodesACoord,\
                                                                    nodesBCoord,\

@@ -30,7 +30,7 @@ def getIntersectionCount(nodesAList, nodesACoord,\
                              nodesBCoord, nodesAAdjList):
     intersectionCount = 0
     numLines  = 0
-    intersectingPairs = []
+    #intersectingPairs = []
     for i in range(len(nodesAList)):
         currNode = nodesAList[i]
         for currNeighbor in nodesAAdjList[currNode]:
@@ -51,8 +51,8 @@ def getIntersectionCount(nodesAList, nodesACoord,\
                                    + nodesBCoord[otherNeighbor][1])/2)
                     if isIntersect(y1, y2, y3, y4):
                         intersectionCount += 1
-                        intersectingPairs.append([(currNode, currNeighbor),\
-                                                      (otherNode, otherNeighbor)])
+                        #intersectingPairs.append([(currNode, currNeighbor),\
+                        #                              (otherNode, otherNeighbor)])
     return intersectionCount, numLines
 
     
