@@ -31,7 +31,8 @@ def getToolsDict():
     tools['PICARD_TOOLS'] ="/home/koronis/mohit/programs/picard-tools-1.68"
     tools['GENOME_ANALYSIS_TK_JAR'] = "/home/koronis/mohit/programs/GenomeAnalysisTK/GenomeAnalysisTK.jar"
     tools['VARSCAN_JAR'] = "/home/koronis/mohit/programs/varscan/VarScan.v2.2.10.jar"
-    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone "
+    #tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone "
+    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 48 /home/koronis/mohit/programs/Drone/Drone "
     return tools
 
 #a dictionary of all possible extensions
@@ -55,10 +56,10 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
     libName = getLibraryName(readLibraryPath)
     retcode = -99
     try:
-        #retcode = call(fastQDumpCmd + " -A " + libName
-        #               + " -O " + outDir + " " +  readLibraryPath,
-        #               shell=True)
-        retcode = 0               
+        retcode = call(fastQDumpCmd + " -A " + libName
+                       + " -O " + outDir + " " +  readLibraryPath,
+                       shell=True)
+        #retcode = 0               
         if retcode < 0:
             print >>sys.stderr, "child terminated by signal", retcode
         else:
@@ -240,11 +241,11 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
         return -1
 
     #execute the wrote jobs through DRONE parallely
-    print "call drone", outDir + fastQJobsFileName
+    """print "call drone", outDir + fastQJobsFileName
     retCode = callParallelDrone(outDir + fastQJobsFileName,\
                                     tools['PARALLEL_DRONE'])
     if retCode != 0:
         #error occured while calling parallel drone
         print "parallel drone erred"
-        return -1
+        return -1"""
     return 1

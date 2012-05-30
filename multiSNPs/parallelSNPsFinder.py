@@ -146,8 +146,8 @@ def snpsFinder(fastaPath, outDir, lockDirPath):
     fastaDirs = workerForBam.getAllFastas(fastaPath)
 
     #file containing snpfinder job for each scaffold
-    snpsFinderJobFileName = fastaPath.split('/')[-1]+"Jobs.jobs"
-
+    snpsFinderJobFileName = fastaPath.split('/')[-1]+"SNPFinderJobs.jobs"
+    print snpsFinderJobFileName + ' job file to be created '
     try:
         #open the snpsFinderJob file
         snpsFinderJobFile = open(outDir + snpsFinderJobFileName, 'w')

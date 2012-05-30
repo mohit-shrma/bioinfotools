@@ -46,6 +46,31 @@ def isValidResults(results):
     else:
         return False
 
+#concatenate all jobs in outDir to be executed by drone
+def combineAllBamJobs(outDir):
+    combinedBAMJobsName = 'combinedBAMJob.jobs'
+    combinedBAMJobsPath = os.path.join(outDir, combinedBAMJobsName)
+    try:
+        combinedBAMJobsFile = open(combinedBAMJobsPath, 'w')
+        dirContents = os.listdir(outDir)
+        for fileName in dirContents:
+            contentPath = os.path.join(outDir, fileName)
+            if os.path.isfile(contentPath) and\
+                    fileName.endswith('Jobs.jobs')\
+                    and fileName.startswith('SRR'):
+                #found a job file
+                jobFile = open(contentPath, 'r')
+                for line in jobFile:
+                    combinedBAMJobsFile.write(line)
+                jobFile.close()
+        combinedBAMJobsFile.close()
+    except IOError as (errno, strerror):
+        print "I/O error({0}): {1}".format(errno, strerror)        
+        return -1
+    return combinedBAMJobsPath
+                                  
+
+    
 def main():
 
     logger = multiprocessing.log_to_stderr()
@@ -66,14 +91,28 @@ def main():
 
         #call child workers to do the job
         print "calling child workers"
-        bamWorkResults = callBamWorkers(readsDir, outDir, locksDir, fastaDir)
+        #bamWorkResults = callBamWorkers(readsDir, outDir, locksDir, fastaDir)
 
-        print "bam work results: " + str(bamWorkResults)
+        #print "bam work results: " + str(bamWorkResults)
         
-        if not isValidResults(bamWorkResults):
-            print "a worker on strike"
-            return
+        #if not isValidResults(bamWorkResults):
+        #    print "a worker on strike"
+        #    return
 
+        #combined all jobs for a job file
+        #combineJobPath = combineAllBamJobs(outDir)
+        #if combineJobPath == -1:
+        #    print 'job concat error'
+        #    return
+
+        #tools = workerForBam.getToolsDict()
+        #retcode = workerForBam.callParallelDrone(combineJobPath, tools['PARALLEL_DRONE'])
+
+        #if retcode != 0:
+        #     #error occured while calling parallel drone
+        #    print "parallel drone erred, in executing combined jobs"
+        #    return -1
+        
         #now for all scaffolds combined bams and look for SNPs
         parallelSNPsFinder.snpsFinder(fastaDir, outDir, locksDir)
         
