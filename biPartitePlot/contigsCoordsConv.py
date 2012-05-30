@@ -138,8 +138,8 @@ def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
     (listRefContigsRange, listQueryContigsRange)\
         = getContigsDetails(contigsMapFilePath)
 
-    print 'Total ref contigs: ', len(listRefContigsRange)
-    print 'Total query contigs: ', len(listQueryContigsRange)
+    print 'Total ref contigs: ', minMatchLen, len(listRefContigsRange)
+    print 'Total query contigs: ', minMatchLen, len(listQueryContigsRange)
         
     coordContigRefDict = getConvContigCoordRange(listRefContigsRange)
     coordContigQueryDict = getConvContigCoordRange(listQueryContigsRange)
@@ -157,8 +157,8 @@ def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
     totalHits = 0
     for contigName, mappingInfos in contigMap.iteritems():
         totalHits += len(mappingInfos)
-    print "totalHits: ", totalHits
-    print "Ref contigs hit: ", len(contigMap) 
+    print "totalHits: ", minMatchLen, totalHits
+    print "Ref contigs hit: ", minMatchLen, len(contigMap) 
 
     return contigMap
 
@@ -184,24 +184,26 @@ def prepareAdjacencyLists(contigMap):
     return refAdjacencyList, queryAdjacencyList
 
 #plot cross minimized by calling heuristics
-def plotCrossMinimizedOrdering(contigMap):
+def plotCrossMinimizedOrdering(contigMap, minMatchLen = 0):
 
     refAdjacencyList, queryAdjacencyList = prepareAdjacencyLists(contigMap)
     refList = refAdjacencyList.keys()
     refList.sort()
     queryList = queryAdjacencyList.keys()
     queryList.sort()
-    print "Num ref contigs: ", len(refList)
-    print "Num query contigs: ", len(queryList)
+    print "Num ref contigs: ", minMatchLen, len(refList)
+    print "Num query contigs: ", minMatchLen,  len(queryList)
     #print refList, queryList
-    """scaffMapPlotter.plotFromLists(refList,\
+    scaffMapPlotter.plotFromLists(refList,\
                                       queryList,\
-                                      refAdjacencyList)
+                                      refAdjacencyList,\
+                                      minMatchLen)
                                       
     refOrderList, queryOrderList =\
         crossingMinimization.minimumCrossingOrdering(refAdjacencyList,\
                                                          queryAdjacencyList)
     #print refOrderList, queryOrderList
     scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
-                                      refAdjacencyList)"""
+                                      refAdjacencyList,\
+                                      minMatchLen)
 

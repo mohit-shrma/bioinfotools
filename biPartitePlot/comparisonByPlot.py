@@ -2,6 +2,27 @@ import sys
 import os
 import scaffCoordsConv
 import contigsCoordsConv
+from multiprocessing import Pool
+import multiprocessing, logging
+
+
+def contigWorker((contigsFilePath, minMatchLen)):
+    #get contig map for the passed contigs
+    contigMap = contigsCoordsConv.parseContigFileNGetMapInfo(contigsFilePath,\
+                                                                     minMatchLen)
+    #try to plot cross minimize ordering     
+    contigsCoordsConv.plotCrossMinimizedOrdering(contigMap, minMatchLen)
+    return True
+
+def callContigWorkers(contigsFilePath, minMatchLenSeq):
+    pool = Pool(processes=len(minMatchLenSeq))
+    workersArgs = []
+    for minMatchLen in minMatchLenSeq:
+        workersArgs.append((contigsFilePath, minMatchLen))
+    results = pool.map(contigWorker, workersArgs)
+    pool.close()
+    pool.join()
+    return results
 
 def main():
 
@@ -30,21 +51,17 @@ def main():
         
         scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
         
-    elif argLen >= 3:
+    elif argLen >= 2:
 
         #contigs map file path
         contigsFilePath = os.path.abspath(sys.argv[1])
 
-        #min match length
-        minMatchLen = int(sys.argv[2])
+        minMatchLenSeq = [4000, 3000, 2000, 1000, 500]
 
-        
-        #get contig map for the passed contigs
-        contigMap = contigsCoordsConv.parseContigFileNGetMapInfo(contigsFilePath,\
-                                                                     minMatchLen)
-                
-        contigsCoordsConv.plotCrossMinimizedOrdering(contigMap)
-        
+        print 'calling child contigs processing workers'
+
+        callContigWorkers(contigsFilePath, minMatchLenSeq)
+
     else:
         print 'err: files missin'
     

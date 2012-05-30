@@ -1,6 +1,5 @@
-from pylab import *
+#from pylab import *
 import numpy as np
-from matplotlib.path import Path
 import coordsConverter
 
 class PlotConsts:
@@ -44,7 +43,7 @@ def generatePlot(scaffMap, minMatchedLen, outFile = ''):
         savefig(outFile)
 
 
-def plotFromLists(nodesA, nodesB, adjListA):
+def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
     nodesACoord = coordsConverter.getCoordinatesDict(nodesA)
     nodesBCoord = coordsConverter.getCoordinatesDict(nodesB)
     #print adjListA
@@ -56,8 +55,10 @@ def plotFromLists(nodesA, nodesB, adjListA):
                                                                    nodesACoord,\
                                                                    nodesBCoord,\
                                                                    adjListA)
-    print 'intersection count: ', intersectionCount
-    print 'num Lines: ', numLines
+    print 'Intersection count: ', minMatchLen, intersectionCount
+    print 'Num lines: ', minMatchLen, numLines
+    #on koronis no pylab module installed, take care of that too
+    """
     for node in nodesA:
         midPtNodeA = (nodesACoord[node][0] + nodesACoord[node][1])/2
         for neighbor in adjListA[node]:
@@ -69,3 +70,4 @@ def plotFromLists(nodesA, nodesB, adjListA):
     ymin, ymax = ylim()   # return the current ylim
     ylim(0, ymax)
     show()
+    """
