@@ -26,8 +26,7 @@ def orderByBarycenterHeuristics(nodesList, nodesAdjacencyList,\
 
 #return a rank dictionary based on given node list, basically indices
 #associated with name
-def prepareRankDict(nodesList):
-    rankDict = {}
+def prepareRankDict(nodesList, rankDict):
     for i in range(len(nodesList)):
         rankDict[nodesList[i]] = i
     return rankDict
@@ -63,17 +62,23 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
     #position remains same in order
     positionChanged = True
     counter = 0
+
+    #initialize query Rank Dict
+    queryRankDict = {}
+
+    #initialize ref Rank Dict
+    refRankDict = {}
     while positionChanged:
         positionChanged = False
         if counter%2 == 0:
             #choose ref nodes to play around
-            queryRankDict = prepareRankDict(queryNodes)
+            queryRankDict = prepareRankDict(queryNodes, queryRankDict)
             refNodes, positionChanged = applyBarycenterHeuristics(refNodes,\
                                                                       refAdjList,\
                                                                       queryRankDict)
         else:
             #choose query nodes to play around
-            refRankDict = prepareRankDict(refNodes)
+            refRankDict = prepareRankDict(refNodes, refRankDict)
             queryNodes, positionChanged = applyBarycenterHeuristics(queryNodes,\
                                                                         queryAdjList,\
                                                                         refRankDict)
