@@ -1,12 +1,14 @@
 import sys
 import os
 import scaffCoordsConv
-import scaffMapPlotter
-
+import contigsCoordsConv
 
 def main():
-    if len(sys.argv) >= 6:
 
+    argLen = len(sys.argv)
+
+    if argLen >= 5:
+        #scaffold
         #scaffolds dir
         scaffsDir = os.path.abspath(sys.argv[1])
 
@@ -20,19 +22,34 @@ def main():
         #min match length
         minMatchLen = int(sys.argv[4])
 
-        #plot outputfile
-        plotOutFilePath = os.path.abspath(sys.argv[5])
-                
         #get scaff map for the passed sequences
         scaffMap = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
                                                                 scaffs1FilePath,\
                                                                 scaffs2FilePath,\
                                                                 minMatchLen)
-
+        
         scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
+        
+    elif argLen >= 3:
 
+        #contigs map file path
+        contigsFilePath = os.path.abspath(sys.argv[1])
+
+        #min match length
+        minMatchLen = int(sys.argv[2])
+
+        
+        #get contig map for the passed contigs
+        contigMap = contigsCoordsConv.parseContigFileNGetMapInfo(contigsFilePath,\
+                                                                     minMatchLen)
+                
+        contigsCoordsConv.plotCrossMinimizedOrdering(contigMap)
+        
     else:
         print 'err: files missin'
+    
+
+
 
 if __name__ == '__main__':
     main()
