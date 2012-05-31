@@ -26,6 +26,26 @@ def isIntersect(y1, y2, y3, y4):
         return True
 
 
+    
+def getIntersectionCountFromAdj(adjListA):
+    intersectionCount = 0
+    numLines = 0
+    for aNode in range(len(adjListA)):
+        for aNodeNeighbor in adjListA[aNode]:
+            #check for intersection of line (aNode, aNodeNeighbor)
+            #end y coords of line
+            y1 = aNode
+            y2 = aNodeNeighbor
+            numLines += 1
+            for otherNode in range(aNode+1, len(adjListA)):
+                for otherNeighbor in adjListA[otherNode]:
+                    #other line is (othernode, otherneighbor)
+                    y3 = otherNode
+                    y4 = otherNeighbor
+                    if isIntersect(y1, y2, y3, y4):
+                        intersectionCount += 1
+    return intersectionCount, numLines
+    
 def getIntersectionCount(nodesAList, nodesACoord,\
                              nodesBCoord, nodesAAdjList):
     intersectionCount = 0

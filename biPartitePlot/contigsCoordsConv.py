@@ -8,9 +8,6 @@ import sys
 which can eventually be plotted"""
 class ContigsConstants:
     
-    #factor specifying how many bases forms a dot
-    ScaleFactor = 1
-
     #columns specifying start and end positions of matching regions of ref
     RefStartCol = 1 - 1
     RefEndCol = 2 - 1
@@ -39,19 +36,18 @@ class ContigsConstants:
 
 
 #passed list in format ('contigName', 'len)
-#return a dict in format contigName -> (start, end, len)
+#return a list in format  [(start, end, len), ...]
 def getConvContigCoordRange(listContigsRange):
-    #list to contain (contigName, start, range)
-    coordContigsDict = {}
+    coordContigsRange = []
     prevEnd = 0
     for (contigName, contigLen) in listContigsRange:
         newStart = prevEnd + 1
         newEnd = math.ceil(float(newStart + (contigLen - 1))\
                                /ContigsConstants.ScaleFactor)
-        coordContigsDict[contigName] = (newStart, newEnd, contigLen)
+        coordContigsRange.append((newStart, newEnd, contigLen))
         prevEnd = newEnd
-    print contigName, prevEnd
-    return coordContigsDict
+    print listContigsRange[-1][0], prevEnd
+    return coordContigsRange
 
 #return the transformed coordinate map from ref to query
 def genCoordsRefQuery(cols, coordContigsDict, contigRefLenIndDict,\
@@ -113,42 +109,86 @@ def getContigMappedDict(contigMapFilePath, coordContigsDict, minMatchLen,\
     return contigMap
 
 
-#generate list of forms [('contigName', 'len), ...]
-def getContigsDetails(contigsMapFilePath):
+
+#optimized getContigsDetails version
+def getContigsDetails(contigsMapFilePath, minMatchLen):
 
     contigRefLenIndDict = {}
     contigQueryLenIndDict = {}
     
-    listRefContigsRange = []
-    listQueryContigsRange = []
+    
+    #contains reference [(name, len), ...]
+    refContigsNameLen = []
+
+    #contains query [(name, len), ...]
+    queryContigsNameLen = []
+
+    #contains details of query hitting ref, just the indices of query
+    # [[q1,q2], ...]
+    refAdjList = []
+
+    #contains details of ref hitting query, just the indices of ref
+    # [[r1,r2], ...]
+    queryAdjList = []
+
     
     try:
         contigsFile = open(contigsMapFilePath, 'r')
         header = contigsFile.readline()
-        refCtr = 0
-        queryCtr = 0
         for line in contigsFile:
+
             cols = (line.rstrip('\n')).split()
+
+            refMatchedLen = float(cols[ContigsConstants.RefMatchedLenCol])
+
+            #only consider matches satisfying minimum matching length passed
+            if refMatchedLen < minMatchLen:
+                continue
+            
             refName = cols[ContigsConstants.RefNameCol]
             if refName not in contigRefLenIndDict:
                 contigRefLenIndDict[refName]\
                     = (cols[ContigsConstants.RefLenCol], refCtr)
+                refContigsNameLen.append((refName,\
+                                              cols[ContigsConstants.RefLenCol]))
                 refCtr += 1
+
             queryName = cols[ContigsConstants.QueryNameCol]
             if queryName not in contigQueryLenIndDict:
                 contigQueryLenIndDict[queryName]\
                     = (cols[ContigsConstants.QueryLenCol], queryCtr)
+                queryContigsNameLen.append(queryName,\
+                                               cols[ContigsConstants.QueryLenCol])
                 queryCtr += 1
+
+            refInd = contigRefLenIndDict[refName][1]
+            queryInd = contigQueryLenIndDict[queryName][1]
+
+            #if size of adjlist is gr8r or equal to current ref indices than
+            #directly add to adjacency list
+            if len(refAdjList) >= refInd + 1:
+                refAdjList[refInd].append(queryInd)
+            elif len(refAdjList) == refInd:
+                #not present in adj list, new entry
+                refAdjList[refInd] = [queryInd]
+            else:
+                print 'error adding to reference adjacency list'
+
+            #add to query adjacency list similar as above
+            if len(queryAdjList) >= queryInd + 1:
+                queryAdjList[queryInd].append(refInd)
+            elif len(queryAdjList) == queryInd:
+                #not present in adj list, new entry
+                queryAdjList[queryInd] = [refInd]
+            else:
+                print 'error adding to query adjacency list'
+            
         contigsFile.close()
-        for contigName, (contigLen, contigId) in contigRefLenIndDict.iteritems():
-            listRefContigsRange.append((contigId, int(contigLen)))
-        for contigName,  (contigLen, contigId) in contigQueryLenIndDict.iteritems():
-            listQueryContigsRange.append((contigId, int(contigLen)))
+            
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
-    #TODO: return dict to also know how the  contigs were assigned ids
-    return (listRefContigsRange, listQueryContigsRange,contigRefLenIndDict,\
-                contigQueryLenIndDict)
+    return refContigsNameLen, queryContigsNameLen, refAdjList, queryAdjList
+
 
 
 def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
@@ -157,71 +197,32 @@ def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
     contigMap = {}
 
     #get contig details for both sequence
-    (listRefContigsRange, listQueryContigsRange,contigRefLenIndDict,\
-                contigQueryLenIndDict)\
-        = getContigsDetails(contigsMapFilePath)
+    refContigsNameLen, queryContigsNameLen, refAdjList, queryAdjList =\
+        getContigsDetails(contigsMapFilePath, minMatchLen)
 
-    print 'Total ref contigs: ', minMatchLen, len(listRefContigsRange)
-    print 'Total query contigs: ', minMatchLen, len(listQueryContigsRange)
+    print 'ref contigs hit: ', len(refContigsNameLen)
+    print 'query contigs hit: ', len(queryContigsNameLen)
         
-    coordContigRefDict = getConvContigCoordRange(listRefContigsRange)
-    coordContigQueryDict = getConvContigCoordRange(listQueryContigsRange)
-    
-    #combine the coordinate infos from both of above sequence
-    coordContigsDict = dict(coordContigRefDict.items()\
-                               + coordContigQueryDict.items()) 
-
-    #parse the contig map file to generate the hit maps for each contig
-    contigMap = getContigMappedDict(contigsMapFilePath, coordContigsDict,\
-                                        minMatchLen, contigRefLenIndDict,\
-                                        contigQueryLenIndDict)
     #find total hits
-    totalHits = 0
-    for contigName, mappingInfos in contigMap.iteritems():
-        totalHits += len(mappingInfos)
-    print "totalHits: ", minMatchLen, totalHits
-    print "Ref contigs hit: ", minMatchLen, len(contigMap) 
-    return contigMap
+    totalHits = sum([len(queryHits) for queryHits in refAdjList])
+    print "totalHits/lines: ", minMatchLen, totalHits
+    return refContigsNameLen, queryContigsNameLen, refAdjList, queryAdjList
 
-
-#prepares adjacency list from passed map
-def prepareAdjacencyLists(contigMap):
-    contigNames = contigMap.keys()
-    refAdjacencyList = {}
-    queryAdjacencyList = {}
-    for refContigName, mappingInfos in contigMap.iteritems():
-        for mappingInfo in mappingInfos:
-            #mappingInfo[1] contains query scaffold name
-            queryContigName = mappingInfo[1]
-
-            if refContigName not in refAdjacencyList:
-                refAdjacencyList[refContigName] = [queryContigName]
-            else:
-                refAdjacencyList[refContigName].append(queryContigName)
-
-            if queryContigName not in queryAdjacencyList:
-                queryAdjacencyList[queryContigName] = [refContigName]
-            else:
-                queryAdjacencyList[queryContigName].append(refContigName)
-    return refAdjacencyList, queryAdjacencyList
 
 #plot cross minimized by calling heuristics
-def plotCrossMinimizedOrdering(contigMap, minMatchLen = 0):
+def plotCrossMinimizedOrdering(refAdjList, queryAdjList, minMatchLen = 0):
 
-    refAdjacencyList, queryAdjacencyList = prepareAdjacencyLists(contigMap)
-    refList = refAdjacencyList.keys()
+    refList = refAdjList.keys()
     refList.sort()
-    queryList = queryAdjacencyList.keys()
+    queryList = queryAdjList.keys()
     queryList.sort()
-    print "plotCross: Num ref contigs: ", minMatchLen, len(refList)
-    print "plotCross: Num query contigs: ", minMatchLen,  len(queryList)
     sys.stdout.flush()
     #print refList, queryList
-    scaffMapPlotter.plotFromLists(refList,\
-                                      queryList,\
-                                      refAdjacencyList,\
+    scaffMapPlotter.plotFromArrayAdjList(refAdjList,\
+                                      queryAdjList,\
                                       minMatchLen)
-                                      
+
+    #TODO: as per new adjacency format modify cross minimization file
     refOrderList, queryOrderList =\
         crossingMinimization.minimumCrossingOrdering(refAdjacencyList,\
                                                          queryAdjacencyList)

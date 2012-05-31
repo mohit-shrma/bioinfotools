@@ -1,4 +1,4 @@
-#from pylab import *
+from pylab import *
 import numpy as np
 import coordsConverter
 import sys
@@ -15,7 +15,7 @@ class PlotConsts:
 #scaffMap dict, scaffName -> [(refTranslatedCoord, queryScaffName,\
 #                queryTranslatedCoord, refMatchedLen), ...]
 def generatePlot(scaffMap, minMatchedLen, outFile = ''):
-   
+    
     for scaffName, mappingInfos in scaffMap.iteritems():
         #print 'plotting ' + scaffName, 'minMatchedLen: ' + str(minMatchedLen)
         for mapInfo in mappingInfos:
@@ -43,7 +43,24 @@ def generatePlot(scaffMap, minMatchedLen, outFile = ''):
     else:
         savefig(outFile)
 
+#plot from adjacency list with indices representing vertices,\
+#and value at these indices representing query node it maps too
+def plotFromArrayAdjList(adjListA, adjListB, minMatchLen = 0):
+    intersectionCount, numLines = \
+        coordsConverter.getIntersectionCountFromAdj(adjListA)
+    print 'intersection count: ', intersectionCount
+    print 'num lines: ', numLines
+    for aNode in adjListA:
+        for aNeighbor on adjListA[aNode]:
+            vertices = np.array([[0, aNode],[0+PlotConsts.XSep, aNeighbor]])
+            plot(vertices[:, 0], vertices[:, 1], color = 'g')
+            print vertices
+    ymin, ymax = ylim()   # return the current ylim
+    ylim(0, ymax)
+    show()
+            
 
+        
 def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
     nodesACoord = coordsConverter.getCoordinatesDict(nodesA)
     nodesBCoord = coordsConverter.getCoordinatesDict(nodesB)
@@ -63,7 +80,7 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
     sys.stdout.flush()
     #on koronis no pylab module installed, take care of that too,
     #so no plotting code
-    """
+    
     for node in nodesA:
         midPtNodeA = (nodesACoord[node][0] + nodesACoord[node][1])/2
         for neighbor in adjListA[node]:
@@ -72,7 +89,8 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
             vertices = np.array([[0, midPtNodeA],\
                                      [0+PlotConsts.XSep, midPtNeighborB]])
             plot(vertices[:,0], vertices[:,1], color = 'r')
+            print vertices
     ymin, ymax = ylim()   # return the current ylim
     ylim(0, ymax)
     show()
-    """
+    
