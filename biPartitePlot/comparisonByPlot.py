@@ -56,12 +56,12 @@ def main():
         #contigs map file path
         contigsFilePath = os.path.abspath(sys.argv[1])
 
-        minMatchLenSeq = [4000]
+        minMatchLenSeq = [0]
 
         print 'calling child contigs processing workers'
 
-        callContigWorkers(contigsFilePath, minMatchLenSeq)
-
+        #callContigWorkers(contigsFilePath, minMatchLenSeq)
+        contigWorker((contigsFilePath, minMatchLenSeq[0]))
     else:
         print 'err: files missin'
     

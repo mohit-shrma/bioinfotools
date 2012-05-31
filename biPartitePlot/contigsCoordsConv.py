@@ -54,31 +54,36 @@ def getConvContigCoordRange(listContigsRange):
     return coordContigsDict
 
 #return the transformed coordinate map from ref to query
-def genCoordsRefQuery(cols, coordContigsDict):
+def genCoordsRefQuery(cols, coordContigsDict, contigRefLenIndDict,\
+                          contigQueryLenIndDict):
 
     refContigName = cols[ContigsConstants.RefNameCol]
+    refContigId = contigRefLenIndDict[refContigName][1]
     refStart = float(cols[ContigsConstants.RefStartCol])
     refEnd = float(cols[ContigsConstants.RefEndCol])
     refCoord = math.ceil(((refStart + refEnd) / 2)\
                              / ContigsConstants.ScaleFactor)
     refMatchedLen = float(cols[ContigsConstants.RefMatchedLenCol])
     #add to transformed start coordinate of contig
-    refTranslatedCoord = coordContigsDict[refContigName][0] + refCoord - 1
+    refTranslatedCoord = coordContigsDict[refContigId][0] + refCoord - 1
     
     queryContigName = cols[ContigsConstants.QueryNameCol]
+    queryContigId = contigQueryLenIndDict[queryContigName][1]
     queryStart = float(cols[ContigsConstants.QueryStartCol])
     queryEnd = float(cols[ContigsConstants.QueryEndCol])
     queryCoord = math.ceil(((queryStart + queryEnd) / 2)\
                                / ContigsConstants.ScaleFactor)
     #add to transformed start coordinate of contig, 0 -> start
-    queryTranslatedCoord = coordContigsDict[queryContigName][0] + queryCoord - 1
+    queryTranslatedCoord = coordContigsDict[queryContigId][0] + queryCoord - 1
 
-    return (refTranslatedCoord, queryContigName,\
+    return (refTranslatedCoord, queryContigId,\
                 queryTranslatedCoord, refMatchedLen)
 
 
 #tranform the mapping from ref to query, in new coords format
-def getContigMappedDict(contigMapFilePath, coordContigsDict, minMatchLen):
+def getContigMappedDict(contigMapFilePath, coordContigsDict, minMatchLen,\
+                            contigRefLenIndDict,\
+                            contigQueryLenIndDict):
 
     #map to contain 'contigName' -> [(refTranslatedCoord, queryContigName,\
     #            queryTranslatedCoord, refMatchedLen), ...] 
@@ -89,15 +94,19 @@ def getContigMappedDict(contigMapFilePath, coordContigsDict, minMatchLen):
         header = contigMapFile.readline()
         for line in contigMapFile:
             cols = (line.rstrip('\n')).split()
-            coords = genCoordsRefQuery(cols, coordContigsDict)
+            coords = genCoordsRefQuery(cols, coordContigsDict,\
+                                           contigRefLenIndDict,\
+                                           contigQueryLenIndDict)
             if coords[3] < minMatchLen:
                 #no need to add as it is less than minimum matched len specified
                 continue
             refContigName = cols[ContigsConstants.RefNameCol]
+            refContigId = contigRefLenIndDict[refContigName][1]
+
             if refContigName not in contigMap:
-                contigMap[refContigName] = [coords]
+                contigMap[refContigId] = [coords]
             else:
-                contigMap[refContigName].append(coords)
+                contigMap[refContigId].append(coords)
         contigMapFile.close()
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)        
@@ -107,27 +116,39 @@ def getContigMappedDict(contigMapFilePath, coordContigsDict, minMatchLen):
 #generate list of forms [('contigName', 'len), ...]
 def getContigsDetails(contigsMapFilePath):
 
-    contigRefLenDict = {}
-    contigQueryLenDict = {}
+    contigRefLenIndDict = {}
+    contigQueryLenIndDict = {}
+    
     listRefContigsRange = []
     listQueryContigsRange = []
+    
     try:
         contigsFile = open(contigsMapFilePath, 'r')
         header = contigsFile.readline()
+        refCtr = 0
+        queryCtr = 0
         for line in contigsFile:
             cols = (line.rstrip('\n')).split()
-            contigRefLenDict[cols[ContigsConstants.RefNameCol]]\
-                = cols[ContigsConstants.RefLenCol]
-            contigQueryLenDict[cols[ContigsConstants.QueryNameCol]]\
-                = cols[ContigsConstants.QueryLenCol]
+            refName = cols[ContigsConstants.RefNameCol]
+            if refName not in contigRefLenIndDict:
+                contigRefLenIndDict[refName]\
+                    = (cols[ContigsConstants.RefLenCol], refCtr)
+                refCtr += 1
+            queryName = cols[ContigsConstants.QueryNameCol]
+            if queryName not in contigQueryLenIndDict:
+                contigQueryLenIndDict[queryName]\
+                    = (cols[ContigsConstants.QueryLenCol], queryCtr)
+                queryCtr += 1
         contigsFile.close()
-        for contigName, contigLen in contigRefLenDict.iteritems():
-            listRefContigsRange.append((contigName, int(contigLen)))
-        for contigName, contigLen in contigQueryLenDict.iteritems():
-            listQueryContigsRange.append((contigName, int(contigLen)))
+        for contigName, (contigLen, contigId) in contigRefLenIndDict.iteritems():
+            listRefContigsRange.append((contigId, int(contigLen)))
+        for contigName,  (contigLen, contigId) in contigQueryLenIndDict.iteritems():
+            listQueryContigsRange.append((contigId, int(contigLen)))
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
-    return (listRefContigsRange, listQueryContigsRange)
+    #TODO: return dict to also know how the  contigs were assigned ids
+    return (listRefContigsRange, listQueryContigsRange,contigRefLenIndDict,\
+                contigQueryLenIndDict)
 
 
 def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
@@ -136,7 +157,8 @@ def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
     contigMap = {}
 
     #get contig details for both sequence
-    (listRefContigsRange, listQueryContigsRange)\
+    (listRefContigsRange, listQueryContigsRange,contigRefLenIndDict,\
+                contigQueryLenIndDict)\
         = getContigsDetails(contigsMapFilePath)
 
     print 'Total ref contigs: ', minMatchLen, len(listRefContigsRange)
@@ -151,17 +173,16 @@ def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
 
     #parse the contig map file to generate the hit maps for each contig
     contigMap = getContigMappedDict(contigsMapFilePath, coordContigsDict,\
-                                        minMatchLen)
-
-    
+                                        minMatchLen, contigRefLenIndDict,\
+                                        contigQueryLenIndDict)
     #find total hits
     totalHits = 0
     for contigName, mappingInfos in contigMap.iteritems():
         totalHits += len(mappingInfos)
     print "totalHits: ", minMatchLen, totalHits
     print "Ref contigs hit: ", minMatchLen, len(contigMap) 
-
     return contigMap
+
 
 #prepares adjacency list from passed map
 def prepareAdjacencyLists(contigMap):
