@@ -169,7 +169,6 @@ def getContigsDetails(contigsMapFilePath, minMatchLen):
                 refAdjList[refInd].append(queryInd)
             elif len(refAdjList) == refInd:
                 #not present in adj list, new entry
-                print 'new ref entry: ', refInd
                 refAdjList.append([queryInd])
             else:
                 print 'error adding to reference adjacency list'
@@ -179,7 +178,6 @@ def getContigsDetails(contigsMapFilePath, minMatchLen):
                 queryAdjList[queryInd].append(refInd)
             elif len(queryAdjList) == queryInd:
                 #not present in adj list, new entry
-                print 'new query entry: ', queryInd
                 queryAdjList.append([refInd])
             else:
                 print 'error adding to query adjacency list'
@@ -200,10 +198,10 @@ def parseContigFileNGetMapInfo(contigsMapFilePath, minMatchLen):
 
     print 'ref contigs hit: ', len(refContigsNameLen)
     print 'query contigs hit: ', len(queryContigsNameLen)
-    print 'ref adj list: ', refAdjList
-    print 'refContigsNameLen: ', refContigsNameLen
-    print 'query adj list: ', queryAdjList
-    print 'queryContigsNameLen: ', queryContigsNameLen
+    #print 'ref adj list: ', refAdjList
+    #print 'refContigsNameLen: ', refContigsNameLen
+    #print 'query adj list: ', queryAdjList
+    #print 'queryContigsNameLen: ', queryContigsNameLen
     #find total hits
     totalHits = sum([len(queryHits) for queryHits in refAdjList])
     print "totalHits/lines: ", totalHits
@@ -221,6 +219,5 @@ def plotCrossMinimizedOrdering(refAdjList, queryAdjList, minMatchLen = 0):
     refOrderedAdjList, queryOrderedAdjList =\
         crossingMinimization.minimumCrossingOrdering2(refAdjList,\
                                                          queryAdjList)
-    print refOrderedAdjList, queryOrderedAdjList
     scaffMapPlotter.plotFromArrayAdjList(refOrderedAdjList, queryOrderedAdjList)
 

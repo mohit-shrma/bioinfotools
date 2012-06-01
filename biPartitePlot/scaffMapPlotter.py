@@ -54,7 +54,7 @@ def plotFromArrayAdjList(adjListA, adjListB, minMatchLen = 0):
         for aNeighbor in adjListA[aNode]:
             vertices = np.array([[0, aNode],[0+PlotConsts.XSep, aNeighbor]])
             plot(vertices[:, 0], vertices[:, 1], color = 'g')
-            print vertices
+            #print vertices
     ymin, ymax = ylim()   # return the current ylim
     ylim(-1, ymax)
     show()
