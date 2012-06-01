@@ -3,6 +3,7 @@ heuristics"""
 
 import operator
 import math
+import array
 
 #compute the order based on rank of neighbor
 def orderByBarycenterHeuristics(nodesList, nodesAdjacencyList,\
@@ -24,6 +25,46 @@ def orderByBarycenterHeuristics(nodesList, nodesAdjacencyList,\
     newNodesOrder = [ name for name, rank in nodeRankTuples]
     return newNodesOrder
 
+
+
+def orderByBarycenterHeuristics2(nodeAdjList):
+
+    #hold new nodes rank (indice, rank)
+    nodesRank = []
+
+    for node in range(len(nodeAdjList)):
+        neighborRankSum = 0
+        for neighbor in nodeAdjList[node]:
+            neighborRankSum += neighbor
+        numNeighbors = len(nodeAdjList[node])
+        if numNeighbors > 0:
+            nodesRank.append(\
+                (node, math.floor(float(neighborRankSum)/numNeighbors)))
+        else:
+            nodesRank.append((node, 0))
+
+    #now order nodes in nodeAdjList according to nodesRank
+    nodesRank.sort(key=operator.itemgetter(1))
+
+    #newIndices[originalNodeIndice] -> newNodeIndice
+    newIndices = range(len(nodeAdjList))
+    for newInd in  range(len(nodesRank)):
+        origInd, rank = nodesRank[newInd]
+        newIndices[origInd] = newInd
+    
+    newNodeAdjList = [ nodeAdjList[origInd] for origInd, rank in nodesRank] 
+
+    return newIndices, newNodeAdjList
+
+#modify passed adj list in-place to update with values from new neighbors indices
+def updateAdjList(newNeighborIndices, oldAdjList):
+    for i in range(len(oldAdjList)):
+        neighbors = oldAdjList[i]
+        for j in range(len(neighbors)):
+            neighbors[j] = newNeighborIndices[neighbors[j]]
+    return oldAdjList
+
+    
 #return a rank dictionary based on given node list, basically indices
 #associated with name
 def prepareRankDict(nodesList, rankDict):
@@ -42,7 +83,46 @@ def applyBarycenterHeuristics(origNodesOrder, adjList, neighborRankDict):
         if newNodesOrder[i] != origNodesOrder[i]:
             return newNodesOrder, True
     return newNodesOrder, False
-            
+
+
+
+def applyBarycenterHeuristics2(nodeAdjList):
+
+    #get new order by applying heuristics
+    newIndices, newNodeAdjList = orderByBarycenterHeuristics2(nodeAdjList)
+    
+    #check if order same as old or not
+    for i in range(len(newIndices)):
+        if i != newIndices[i]:
+            return newIndices, newNodeAdjList, True
+    return newIndices, newNodeAdjList, False
+
+
+def minimumCrossingOrdering2(refAdjList, queryAdjList):
+    positionChanged = True
+    counter = 0 
+
+    while positionChanged:
+        positionChanged = False
+        if counter%2 == 0:
+            #choose refAdjList to play
+            newRefIndices, newNodeAdjList, positionChanged\
+                = applyBarycenterHeuristics2(refAdjList)
+            #assign new adjlist to refadjlist
+            refAdjlist = newNodeAdjList
+            #update query adj list with new refInd
+            queryAdjList = updateAdjList(newRefIndices, queryAdjList)
+        else:
+            #choose queryAdjList to play
+            newQueryIndices, newNodeAdjList, positionChanged\
+                = applyBarycenterHeuristics2(queryAdjList)
+            #assign new adjlist to queryadjlist
+            queryAdjlist = newNodeAdjList
+            #update ref adj list with new queryInd
+            refAdjList = updateAdjList(newQueryIndices, refAdjList)
+        counter += 1
+    return refAdjList, queryAdjList
+
 
 
 #return order of both ref and query minimizing crossings in between

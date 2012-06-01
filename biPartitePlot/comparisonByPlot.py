@@ -8,10 +8,12 @@ import multiprocessing, logging
 
 def contigWorker((contigsFilePath, minMatchLen)):
     #get contig map for the passed contigs
-    contigMap = contigsCoordsConv.parseContigFileNGetMapInfo(contigsFilePath,\
-                                                                     minMatchLen)
+    refContigsNameLen, queryContigsNameLen, refAdjList, queryAdjList\
+        = contigsCoordsConv.parseContigFileNGetMapInfo(contigsFilePath,\
+                                                           minMatchLen)
     #try to plot cross minimize ordering     
-    contigsCoordsConv.plotCrossMinimizedOrdering(contigMap, minMatchLen)
+    contigsCoordsConv.plotCrossMinimizedOrdering(refAdjList, queryAdjList,\
+                                                     minMatchLen)
     return True
 
 def callContigWorkers(contigsFilePath, minMatchLenSeq):
