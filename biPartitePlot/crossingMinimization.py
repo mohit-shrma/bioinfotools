@@ -100,7 +100,7 @@ def applyBarycenterHeuristics2(nodeAdjList):
 
 def minimumCrossingOrdering2(refAdjList, queryAdjList):
     positionChanged = True
-    counter = 0 
+    counter = 1 
 
     while positionChanged:
         positionChanged = False
@@ -109,7 +109,7 @@ def minimumCrossingOrdering2(refAdjList, queryAdjList):
             newRefIndices, newNodeAdjList, positionChanged\
                 = applyBarycenterHeuristics2(refAdjList)
             #assign new adjlist to refadjlist
-            refAdjlist = newNodeAdjList
+            refAdjList = newNodeAdjList
             #update query adj list with new refInd
             queryAdjList = updateAdjList(newRefIndices, queryAdjList)
         else:
@@ -117,7 +117,7 @@ def minimumCrossingOrdering2(refAdjList, queryAdjList):
             newQueryIndices, newNodeAdjList, positionChanged\
                 = applyBarycenterHeuristics2(queryAdjList)
             #assign new adjlist to queryadjlist
-            queryAdjlist = newNodeAdjList
+            queryAdjList = newNodeAdjList
             #update ref adj list with new queryInd
             refAdjList = updateAdjList(newQueryIndices, refAdjList)
         counter += 1
