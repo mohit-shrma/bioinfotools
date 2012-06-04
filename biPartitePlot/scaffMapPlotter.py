@@ -75,8 +75,8 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
                                                                    nodesACoord,\
                                                                    nodesBCoord,\
                                                                    adjListA)
-    print 'plotFromLists: Intersection count: ', minMatchLen, intersectionCount
-    print 'plotFromLists: Num lines: ', minMatchLen, numLines
+    print 'plotFromLists: Intersection count: ',  intersectionCount
+    print 'plotFromLists: Num lines: ',  numLines
     sys.stdout.flush()
     #on koronis no pylab module installed, take care of that too,
     #so no plotting code
@@ -89,7 +89,7 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
             vertices = np.array([[0, midPtNodeA],\
                                      [0+PlotConsts.XSep, midPtNeighborB]])
             plot(vertices[:,0], vertices[:,1], color = 'r')
-            print vertices
+            #print vertices
     ymin, ymax = ylim()   # return the current ylim
     ylim(0, ymax)
     show()

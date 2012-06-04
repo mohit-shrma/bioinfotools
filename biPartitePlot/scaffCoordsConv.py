@@ -186,10 +186,26 @@ def prepareAdjacencyLists(scaffMap):
     return refAdjacencyList, queryAdjacencyList
 
 
+def removeOneOneMapping(refAdjList, queryAdjList):
+    refNodes = refAdjList.keys()
+    for refNode in refNodes:
+        neighbors = refAdjList[refNode]
+        if len(set(neighbors)) == 1:
+            singleNeighbor = neighbors[0]
+            #check if in queryAdjList neighbor maps to node only
+            if len(set(queryAdjList[singleNeighbor])) == 1 and\
+                    refNode in queryAdjList[singleNeighbor]:
+                #found one - one mapping
+                del refAdjList[refNode]
+                del queryAdjList[singleNeighbor]
+    return refAdjList, queryAdjList
+
+
 #plot cross minimized by calling heuristics
 def plotCrossMinimizedOrdering(scaffMap):
 
     refAdjacencyList, queryAdjacencyList = prepareAdjacencyLists(scaffMap)
+    removeOneOneMapping(refAdjacencyList, queryAdjacencyList)
     refList = refAdjacencyList.keys()
     refList.sort()
     queryList = queryAdjacencyList.keys()

@@ -53,14 +53,14 @@ def main():
         
         scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
         
-    elif argLen >= 2:
+    elif argLen >= 3:
 
         #contigs map file path
         contigsFilePath = os.path.abspath(sys.argv[1])
 
-        minMatchLenSeq = [4000]
+        minMatchLenSeq = [int(sys.argv[2])]
 
-        print 'calling child contigs processing workers'
+        print 'calling child contigs processing workers: minMatchLen', minMatchLenSeq
 
         #callContigWorkers(contigsFilePath, minMatchLenSeq)
         contigWorker((contigsFilePath, minMatchLenSeq[0]))
