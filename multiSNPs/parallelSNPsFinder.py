@@ -45,7 +45,7 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     #merge all bams for this scaffold into single bama
     jobsFile.write(tools['SAMTOOLS'] + " merge "\
                        + fastaDir + fastaFileName + extensions['SORT_BAM_EXT'] + ".bam "\
-                       + fastaDir + fastaFileName + "*" + extensions['SORT_BAM_EXT'] + ".bam "\
+                       + fastaDir + "*" + extensions['SORT_BAM_EXT'] + ".bam "\
                        + " ; ")
 
     #add or replace read groups
