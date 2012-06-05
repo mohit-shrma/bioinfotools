@@ -186,26 +186,43 @@ def prepareAdjacencyLists(scaffMap):
     return refAdjacencyList, queryAdjacencyList
 
 
-def removeOneOneMapping(refAdjList, queryAdjList):
+#remove independent one-to-many mappings these dont have any intersection with\
+#others and can be considered independently
+def removeOneToManyMapping(refAdjList, queryAdjList):
     refNodes = refAdjList.keys()
     for refNode in refNodes:
-        neighbors = refAdjList[refNode]
-        if len(set(neighbors)) == 1:
-            singleNeighbor = neighbors[0]
-            #check if in queryAdjList neighbor maps to node only
-            if len(set(queryAdjList[singleNeighbor])) == 1 and\
-                    refNode in queryAdjList[singleNeighbor]:
-                #found one - one mapping
-                del refAdjList[refNode]
-                del queryAdjList[singleNeighbor]
+        neighbors = set(refAdjList[refNode])
+        neighborDelCount = 0
+        for neighbor in neighbors:
+            if len(set(queryAdjList[neighbor])) == 1 and\
+                    refNode in queryAdjList[neighbor]:
+                neighborDelCount += 1
+        if neighborDelCount == len(neighbors):
+            #found one-many mapping
+            del refAdjList[refNode]
+            for neighbor in neighbors:
+                del queryAdjList[neighbor]
     return refAdjList, queryAdjList
-
+        
+    
 
 #plot cross minimized by calling heuristics
 def plotCrossMinimizedOrdering(scaffMap):
 
+    #try to plot before removing 1-1 or 1-many mappings
     refAdjacencyList, queryAdjacencyList = prepareAdjacencyLists(scaffMap)
-    removeOneOneMapping(refAdjacencyList, queryAdjacencyList)
+    refList = refAdjacencyList.keys()
+    refList.sort()
+    queryList = queryAdjacencyList.keys()
+    queryList.sort()
+    scaffMapPlotter.plotFromLists(refList,\
+                                      queryList,\
+                                      refAdjacencyList)
+    #remove contained in itself one -to- many mapping before
+    #reordering
+    removeOneToManyMapping(refAdjacencyList, queryAdjacencyList)
+    removeOneToManyMapping(queryAdjacencyList, refAdjacencyList)
+
     refList = refAdjacencyList.keys()
     refList.sort()
     queryList = queryAdjacencyList.keys()
@@ -214,7 +231,6 @@ def plotCrossMinimizedOrdering(scaffMap):
     scaffMapPlotter.plotFromLists(refList,\
                                       queryList,\
                                       refAdjacencyList)
-
     refOrderList, queryOrderList =\
         crossingMinimization.minimumCrossingOrdering(refAdjacencyList,\
                                                          queryAdjacencyList)
