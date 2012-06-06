@@ -46,24 +46,9 @@ class ScaffConstants:
     #stats file scaff length
     StatsLengthCol = 2 - 1
 
-#passed list in format ('scaffName', 'len)
-#return a dict in format scaffName -> (start, end, len)
-def getConvScaffCoordRange(listScaffsRange):
-    #list to contain (scaffName, start, range)
-    coordScaffsDict = {}
-    prevEnd = 0
-    for (scaffName, length) in listScaffsRange:
-        newStart = prevEnd + 1
-        newEnd = math.ceil(float(newStart + (length - 1))\
-                               /ScaffConstants.ScaleFactor)
-        coordScaffsDict[scaffName] = (newStart, newEnd, length)
-        prevEnd = newEnd
-    print scaffName, prevEnd
-    return coordScaffsDict
-
-
-#return the transformed coordinate map from ref to query
-def genCoordsRefQuery(cols, coordScaffsDict):
+    
+#return the matching details for currrent match
+def genCoordsRefQuery(cols):
 
     refScaffName = cols[ScaffConstants.RefNameCol]
     refStart = float(cols[ScaffConstants.RefStartCol])
@@ -71,23 +56,19 @@ def genCoordsRefQuery(cols, coordScaffsDict):
     refCoord = math.ceil(((refStart + refEnd) / 2) / ScaffConstants.ScaleFactor)
     #TODO: check whether -1 needs to be added
     refMatchedLen = refEnd - refStart
-    #add to transformed start coordinate of scaffold
-    refTranslatedCoord = coordScaffsDict[refScaffName][0] + refCoord - 1
-    
+     
     queryScaffName = cols[ScaffConstants.QueryNamecol]
     queryStart = float(cols[ScaffConstants.QueryStartCol])
     queryEnd = float(cols[ScaffConstants.QueryEndCol])
     queryCoord = math.ceil(((queryStart + queryEnd) / 2)\
                                / ScaffConstants.ScaleFactor)
-    #add to transformed start coordinate of scaffold, 0 -> start
-    queryTranslatedCoord = coordScaffsDict[queryScaffName][0] + queryCoord - 1
 
-    return (refTranslatedCoord, queryScaffName,\
-                queryTranslatedCoord, refMatchedLen)
+    return ([refStart, refEnd], queryScaffName,\
+                [queryStart, queryEnd], refMatchedLen)
     
 
 #tranform the mapping from ref to query, in new coords format
-def getScaffMappedList(scaffMapFilePath, coordScaffsDict, minMatchedLen = 5000):
+def getScaffMappedList(scaffMapFilePath,  minMatchedLen = 5000):
     mappingInfos = []
     refScaffName = ''
     try:
@@ -95,7 +76,7 @@ def getScaffMappedList(scaffMapFilePath, coordScaffsDict, minMatchedLen = 5000):
         header = scaffMapFile.readline()
         for line in scaffMapFile:
             cols = (line.rstrip('\n')).split()
-            coords = genCoordsRefQuery(cols, coordScaffsDict)
+            coords = genCoordsRefQuery(cols)
             if coords[3] < minMatchedLen:
                 #no need to add as it is less than minimum matched len specified
                 continue
@@ -125,28 +106,12 @@ def getScaffsDetails(scaffsFilePath):
         print "I/O error({0}): {1}".format(errno, strerror)
     return listScaffsRange
 
+
 def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
                                  minMatchLen):
 
     #dictionary to keep scaffold mapping details
     scaffMap = {}
-
-    #get scaffold details for first sequence
-    listScaffs1Range = (getScaffsDetails(scaffsFile1Path))
-    coordScaff1Dict = getConvScaffCoordRange(listScaffs1Range)
-    #print coordScaff1Dict
-    
-    #get scaffold details for second sequence
-    listScaffs2Range = (getScaffsDetails(scaffsFile2Path))
-    coordScaff2Dict = getConvScaffCoordRange(listScaffs2Range)
-    #print coordScaff2Dict
-
-
-    coordRefDict = coordScaff1Dict
-    coordQueryDict = coordScaff2Dict
-    #combine the coordinate infos from both of above sequence
-    coordScaffDict = dict(coordScaff1Dict.items() + coordScaff2Dict.items()) 
-
 
     totalHits = 0
     
@@ -157,13 +122,13 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
             filePath = os.path.join(scaffDir, fileName)
             if os.path.isfile(filePath):
                 (refScaffName, mappingInfos) = getScaffMappedList(filePath,\
-                                                                      coordScaffDict,\
                                                                       minMatchLen)
                 if refScaffName:
                     scaffMap[refScaffName] = mappingInfos
                     totalHits += len(mappingInfos)
     print 'total hits: ', totalHits
     return scaffMap
+
 
 def prepareAdjacencyLists(scaffMap):
     scaffNames = scaffMap.keys()
@@ -203,9 +168,38 @@ def removeOneToManyMapping(refAdjList, queryAdjList):
             for neighbor in neighbors:
                 del queryAdjList[neighbor]
     return refAdjList, queryAdjList
-        
     
 
+#display regions in specified order, depending on value of printRef
+def displayMatchingRegion(scaffMap, refOrderList, refAdjList,\
+                              queryOrderList, queryAdjList,\
+                              printRef):
+    if printRef:
+        #print by refList order
+        for refName in refOrderList:
+            for mappingInfo in scaffMap[refName]:
+            #mappingInfo is of following form    
+            # ([refStart, refEnd], queryScaffName,
+            #  [queryStart, queryEnd], refMatchedLen)
+                print refName, mappingInfo[0][0], mappingInfo[0][1],\
+                    mappingInfo[1], mappingInfo[2][0], mappingInfo[2][1],\
+                    mappingInfo[3]
+    else:
+        #print by queryList order
+        for queryName in queryOrderList:
+            refMatchingScaffs = queryAdjList[queryName]
+            for refName in set(refMatchingScaffs):
+                for mappingInfo in scaffMap[refName]:
+                #mappingInfo is of following form    
+                # ([refStart, refEnd], queryScaffName,
+                #  [queryStart, queryEnd], refMatchedLen)
+                    if queryName == mappingInfo[1]:
+                        print queryName, mappingInfo[2][0], mappingInfo[2][1],\
+                            refName, mappingInfo[0][0], mappingInfo[0][1],\
+                            mappingInfo[3]
+
+
+                        
 #plot cross minimized by calling heuristics
 def plotCrossMinimizedOrdering(scaffMap):
 
@@ -218,7 +212,7 @@ def plotCrossMinimizedOrdering(scaffMap):
     scaffMapPlotter.plotFromLists(refList,\
                                       queryList,\
                                       refAdjacencyList)
-    #remove contained in itself one -to- many mapping before
+    #remove contained in itself one-to-many mapping before
     #reordering
     removeOneToManyMapping(refAdjacencyList, queryAdjacencyList)
     removeOneToManyMapping(queryAdjacencyList, refAdjacencyList)
@@ -234,7 +228,18 @@ def plotCrossMinimizedOrdering(scaffMap):
     refOrderList, queryOrderList =\
         crossingMinimization.minimumCrossingOrdering(refAdjacencyList,\
                                                          queryAdjacencyList)
+    
+    """
+    print 'refOrderList: ', refOrderList, '\n'
+    print 'queryOrderList: ', queryOrderList, '\n'
+    print 'refAdjacencyList: ', refAdjacencyList, '\n'
+    print 'queryAdjacencyList: ', queryAdjacencyList, '\n'
+
+    displayMatchingRegion(scaffMap, refOrderList, refAdjacencyList,\
+                              queryOrderList, queryAdjacencyList,\
+                              False)"""
+    
     #print refOrderList, queryOrderList
     scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
                                       refAdjacencyList)
-
+    

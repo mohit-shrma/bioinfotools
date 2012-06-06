@@ -16,7 +16,7 @@ def orderByBarycenterHeuristics(nodesList, nodesAdjacencyList,\
             neighborsRankSum += neighborRankDict[neighbor]
         numNeighbors = len(nodesAdjacencyList[node])
         if numNeighbors > 0:
-            nodesRank[node] = math.floor(float(neighborsRankSum)/numNeighbors)
+            nodesRank[node] = (float(neighborsRankSum)/numNeighbors)
         else:
             nodesRank[node] = 0
     nodeRankTuples = [(node, nodesRank[node]) for node in nodesList]
