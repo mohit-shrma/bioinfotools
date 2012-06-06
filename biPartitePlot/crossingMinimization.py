@@ -3,7 +3,8 @@ heuristics"""
 
 import operator
 import math
-import array
+import graphUtil
+
 
 #compute the order based on rank of neighbor
 def orderByBarycenterHeuristics(nodesList, nodesAdjacencyList,\
@@ -125,18 +126,39 @@ def minimumCrossingOrdering2(refAdjList, queryAdjList):
 
 
 
+#find order lists as per connected components list
+def getOrderedLists(connectedRefs, refAdjList, queryAdjList):
+    refList = []
+    queryList = []
+    for connectedComp in connectedRefs:
+        for refNode in connectedComp:
+            refList.append(refNode)
+            for queryNode in set(refAdjList[refNode]):
+                if queryNode not in queryList:
+                    queryList.append(queryNode)
+
+    if len( set(refAdjList.keys()) ^ set(refList) ) > 0 or\
+            len( set(queryAdjList.keys()) ^ set(queryList) ) > 0:
+            print 'err: missing some nodes either in ref or query'
+            return [],[]
+
+    return refList, queryList
+
+
+
 #return order of both ref and query minimizing crossings in between
 #passed adjacncy list as dict, node -> [nodeNeighbor1, ...]    
 def minimumCrossingOrdering(refAdjList, queryAdjList):
 
-    #decides on initial ordering of ref, for now use default random order
-    #in which keys might be stored in adjDict
-    refNodes = refAdjList.keys()
-    queryNodes = queryAdjList.keys()
-    refNodes.sort()
-    queryNodes.sort()
-    #print 'refNodes: ', refNodes
-    #print 'queryNodes: ', queryNodes
+    #get connected components cluster
+    connectedRefs = graphUtil.findConnectedComps(refAdjList, queryAdjList)
+
+    #use connected comps to decide the initial order
+    refNodes, queryNodes = getOrderedLists(connectedRefs, refAdjList,\
+                                               queryAdjList)
+    
+    print 'refNodes b4 cross min: ', refNodes
+    print 'queryNodes b4 cross min: ', queryNodes
     
     #apply barycenter heuristices alternately on ref then query until their
     #position remains same in order
