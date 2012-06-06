@@ -37,17 +37,27 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
 
     #write statements for processing job
 
+    #change directory to scaffold where we are working
+    jobsFile.write("cd "+ fastaDir+"; ")
+
+    
+    #generate fai
+    jobsFile.write(tools['SAMTOOLS'] + " faidx "\
+                       + fastaDir + fastaFileName + extensions['SCAFF_EXT'] +\
+                       " ; ")
+
+    
     #built fasta sequence dictionary
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/CreateSequenceDictionary.jar R=" + fastaFilePath\
                        + " O=" + fastaDir + fastaFileName +".dict ; ")
-
+    
     #merge all bams for this scaffold into single bama
     jobsFile.write(tools['SAMTOOLS'] + " merge "\
                        + fastaDir + fastaFileName + extensions['SORT_BAM_EXT'] + ".bam "\
                        + fastaDir + "*" + extensions['SORT_BAM_EXT'] + ".bam "\
                        + " ; ")
-
+    
     #add or replace read groups
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/AddOrReplaceReadGroups.jar I="\
