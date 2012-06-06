@@ -73,6 +73,7 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
         print >>sys.stderr, "Execution failed: ", e
     return retcode
 
+
 #call the parallel drone program to process the multiple jobs file
 def callParallelDrone(jobsFilePath, parallelDrone):
     #call parallel Drone program
@@ -152,10 +153,12 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
     #Burrow wheel aligner processing
     
-    #generate index
+    #generate index, do following separately as this is for scaffold,
+    #not for read
     #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
     #                   + fastaFileName + extensions['SCAFF_EXT'] \
     #                   + " " + fastaFilePath + "; ")
+
 
     #generate SAI
     jobsFile.write(tools['BWA'] +" aln -n 3 -l 1000000 -o 1 -e 5 "\
@@ -241,6 +244,7 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
         return -1
 
     #execute the wrote jobs through DRONE parallely
+    
     """print "call drone", outDir + fastQJobsFileName
     retCode = callParallelDrone(outDir + fastQJobsFileName,\
                                     tools['PARALLEL_DRONE'])
