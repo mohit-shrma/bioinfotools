@@ -39,5 +39,17 @@ def findConnectedComps(refAdjList, queryAdjList):
                 refNodes.remove(node)
                 
     return connectedRefComps
-        
 
+
+#return ref nodes, query nodes, ref adj list
+#for the passed ref nodes
+def getClusterComps(refNodes, refAdjList, queryAdjList):
+    queryNodes = []
+    subRefAdjList = {}
+    subQueryAdjList = {}
+    for refNode in refNodes:
+        subRefAdjList[refNode] = refAdjList[refNode]
+        for queryNode in refAdjList[refNode]:
+            queryNodes.append(queryNode)
+            subQueryAdjList[queryNode] = queryAdjList[queryNode]
+    return refNodes , list(set(queryNodes)), subRefAdjList, subQueryAdjList

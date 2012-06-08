@@ -156,6 +156,7 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
     #use connected comps to decide the initial order
     refNodes, queryNodes = getOrderedLists(connectedRefs, refAdjList,\
                                                queryAdjList)
+
     
     print 'refNodes b4 cross min: ', refNodes
     print 'queryNodes b4 cross min: ', queryNodes

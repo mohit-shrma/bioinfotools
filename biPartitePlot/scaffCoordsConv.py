@@ -2,6 +2,9 @@ import math
 import os
 import scaffMapPlotter
 import crossingMinimization
+import GEXFWriter
+import coordsConverter
+import graphUtil
 
 """convert scaffold mapping to another scaffold coordinates mapping which can
 eventually be plotted """
@@ -199,6 +202,20 @@ def displayMatchingRegion(scaffMap, refOrderList, refAdjList,\
                             mappingInfo[3]
 
 
+def getOrderedClusterWNumIntersection((clusterRef, refAdjList, queryAdjList)):
+    #get all attributes of subgraph formed by cluster
+    refNodes, queryNodes, subRefAdjList, subQueryAdjList =\
+        graphUtil.getClusterComps(clusterRef, refAdjList, queryAdjList)
+    #get crossminimized order for the cluster
+    refOrderList, queryOrderList =\
+        crossingMinimization.minimumCrossingOrdering(subRefAdjList,\
+                                                         subQueryAdjList)
+    #count intersection in cluster
+    intersectionCount = coordsConverter.getIntersectingCount(refOrderList,\
+                                                                 queryOrderList,\
+                                                                 refAdjList)
+    return refOrderList, queryOrderList, intersectionCount
+                        
                         
 #plot cross minimized by calling heuristics
 def plotCrossMinimizedOrdering(scaffMap):
@@ -225,21 +242,49 @@ def plotCrossMinimizedOrdering(scaffMap):
     scaffMapPlotter.plotFromLists(refList,\
                                       queryList,\
                                       refAdjacencyList)
-    refOrderList, queryOrderList =\
-        crossingMinimization.minimumCrossingOrdering(refAdjacencyList,\
-                                                         queryAdjacencyList)
-    
-    """
+
+    #get connected clusters
+    connectedRefComps = graphUtil.findConnectedComps(refAdjacencyList, queryAdjacencyList)
+
+    #order these clusters and minimize intersection b/w them
+    orderedClusters = map(getOrderedClusterWNumIntersection,\
+                              [(comp, refAdjacencyList, queryAdjacencyList)\
+                                   for comp in connectedRefComps])
+
+    refOrderList = []
+    queryOrderList = []
+    totalIntersections = 0
+    #from ordered clusters separate clusters with intersections
+    for orderedCluster in orderedClusters:
+        numIntersect = orderedCluster[2]
+        totalIntersections += numIntersect
+        if numIntersect != 0:
+            refOrderList += orderedCluster[0]
+            queryOrderList += orderedCluster[1]
+
+    print 'total intersections: ', totalIntersections
+            
     print 'refOrderList: ', refOrderList, '\n'
     print 'queryOrderList: ', queryOrderList, '\n'
-    print 'refAdjacencyList: ', refAdjacencyList, '\n'
+    """print 'refAdjacencyList: ', refAdjacencyList, '\n'
     print 'queryAdjacencyList: ', queryAdjacencyList, '\n'
-
-    displayMatchingRegion(scaffMap, refOrderList, refAdjacencyList,\
+    """
+    """displayMatchingRegion(scaffMap, refOrderList, refAdjacencyList,\
                               queryOrderList, queryAdjacencyList,\
                               False)"""
-    
+
+    #plot only these interesectiong refs cluster in the order, 
+    #as reported after cross-minimization
     #print refOrderList, queryOrderList
     scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
-                                      refAdjacencyList)
+                                      refAdjacencyList, 0, False)
     
+    
+    #write the ordered graph file
+    with open('orderedScaffs.gexf', 'w') as graphFile:
+        xmlGraphStr = GEXFWriter.getGexfXMLString(refAdjacencyList,\
+                                                      refOrderList,\
+                                                      queryOrderList)
+        graphFile.write(xmlGraphStr)
+
+        

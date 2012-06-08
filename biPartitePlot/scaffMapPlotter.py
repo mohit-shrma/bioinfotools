@@ -61,7 +61,8 @@ def plotFromArrayAdjList(adjListA, adjListB, minMatchLen = 0):
             
 
         
-def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
+def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0,\
+                      dispIntersPairs=False):
     nodesACoord = coordsConverter.getCoordinatesDict(nodesA)
     nodesBCoord = coordsConverter.getCoordinatesDict(nodesB)
     #print adjListA
@@ -71,12 +72,16 @@ def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0):
     #print nodesBCoord
     print 'made nodesACoord, nodesBCoord', len(nodesACoord), len(nodesBCoord)
     sys.stdout.flush()
-    intersectionCount, numLines = coordsConverter.getIntersectionCount(nodesA,\
-                                                                   nodesACoord,\
-                                                                   nodesBCoord,\
-                                                                   adjListA)
+    intersectionCount, numLines, intersectingPairs\
+        = coordsConverter.getIntersectionCount(nodesA,\
+                                                   nodesACoord,\
+                                                   nodesBCoord,\
+                                                   adjListA,\
+                                                   dispIntersPairs)
     print 'plotFromLists: Intersection count: ',  intersectionCount
     print 'plotFromLists: Num lines: ',  numLines
+    if dispIntersPairs:
+        print 'Intersecting pairs:', intersectingPairs
     sys.stdout.flush()
     #on koronis no pylab module installed, take care of that too,
     #so no plotting code
