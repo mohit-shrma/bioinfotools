@@ -24,24 +24,24 @@ class ScaffConstants:
     ScaleFactor = 1
 
     #columns specifying start and end positions of matching regions of ref
-    RefStartCol = 4#2#5 - 1
-    RefEndCol = 5#3#6 - 1
+    RefStartCol = 2#5 - 1
+    RefEndCol = 3#6 - 1
     
     #column specifying reference length
-    RefLenCol = 3#1#4 - 1
+    RefLenCol = 1#4 - 1
 
     #column specifying ref name
-    RefNameCol =  1#0#2 - 1
+    RefNameCol =  0#2 - 1
     
     #column specifying query length
-    QueryLenCol = 8#7#9 - 1 
+    QueryLenCol = 7#9 - 1 
 
     #column specifying query name
-    QueryNamecol = 6#4#7 - 1
+    QueryNamecol = 4#7 - 1
     
     #columns specifying start and end positions of matching regions of query
-    QueryStartCol = 9#5#10 - 1
-    QueryEndCol = 10#6#11 - 1
+    QueryStartCol = 5#10 - 1
+    QueryEndCol = 6#11 - 1
 
     #stats file scaff name
     StatsNameCol = 1 - 1
@@ -154,7 +154,7 @@ def prepareAdjacencyLists(scaffMap):
     return refAdjacencyList, queryAdjacencyList
 
 
-#remove independent one-to-many mappings these dont have any intersection with\
+#remvoe independent one-to-many mappings these dont have any intersection with\
 #others and can be considered independently
 def removeOneToManyMapping(refAdjList, queryAdjList):
     refNodes = refAdjList.keys()
@@ -215,7 +215,66 @@ def getOrderedClusterWNumIntersection((clusterRef, refAdjList, queryAdjList)):
                                                                  queryOrderList,\
                                                                  refAdjList)
     return refOrderList, queryOrderList, intersectionCount
-                        
+
+
+#return the count of hits which are parallel
+#but separated by huge gap in either scaffold
+def getMultiHitsCountsNDisp(scaffMap):
+
+    conflictedCount = 0
+    sepParallelCount = 0
+    parallelCount  = 0
+
+    for refNode, mappingInfos in scaffMap.iteritems():
+        #mappingInfo is of following form    
+        # ([refStart, refEnd], queryScaffName,
+        #  [queryStart, queryEnd], refMatchedLen)
+        #sort by 0
+        sortedMappingInfos = sorted(mappingInfos, key=lambda mapInfo: mapInfo[0][0])
+
+        processedScaff = []
+        prevMapInfo = None
+        scaffParallelCount = 0
+        
+        for mapInfo in sortedMappingInfos:
+            currQueryName = mapInfo[1]
+            currRefStart = mapInfo[0][0]
+            currQueryStart = mapInfo[2][0]
+            
+            #if current query already processed then a conflict found
+            if currQueryName in processedScaff:
+                conflictedCount += 1
+                scaffParallelCount = 0
+                break
+            
+            if prevMapInfo is not None:
+                prevRefEnd = prevMapInfo[0][1]
+                prevQueryName = prevMapInfo[1]
+                prevQueryEnd = prevMapInfo[2][1]
+                if currQueryName == prevQueryName:
+                    #check for parallel
+                    if currQueryStart > prevQueryEnd:
+                        #parallel not intersecting hit
+                        #if parallel check for gap between them gr8r than
+                        #half threshold or not
+                        displacementRatio =\
+                            float(currRefStart - prevRefEnd)\
+                            / float(currQueryStart - prevQueryEnd)
+                        if displacementRatio > 2 or displacementRatio < 0.5:
+                            #gap between them gr8r than half of the other
+                            scaffParallelCount += 1
+                else:
+                    #append to processed scaffold list
+                    processedScaff.append(prevQueryName)
+                    
+            prevMapInfo = mapInfo
+            
+        sepParallelCount += scaffParallelCount
+        
+    return conflictedCount, parallelCount, sepParallelCount
+
+
+
                         
 #plot cross minimized by calling heuristics
 def plotCrossMinimizedOrdering(scaffMap):
@@ -244,7 +303,8 @@ def plotCrossMinimizedOrdering(scaffMap):
                                       refAdjacencyList)
 
     #get connected clusters
-    connectedRefComps = graphUtil.findConnectedComps(refAdjacencyList, queryAdjacencyList)
+    connectedRefComps = graphUtil.findConnectedComps(refAdjacencyList,\
+                                                         queryAdjacencyList)
 
     #order these clusters and minimize intersection b/w them
     orderedClusters = map(getOrderedClusterWNumIntersection,\
@@ -261,12 +321,12 @@ def plotCrossMinimizedOrdering(scaffMap):
         if numIntersect != 0:
             refOrderList += orderedCluster[0]
             queryOrderList += orderedCluster[1]
-
+       
     print 'total intersections: ', totalIntersections
-            
+    """        
     print 'refOrderList: ', refOrderList, '\n'
     print 'queryOrderList: ', queryOrderList, '\n'
-    """print 'refAdjacencyList: ', refAdjacencyList, '\n'
+    print 'refAdjacencyList: ', refAdjacencyList, '\n'
     print 'queryAdjacencyList: ', queryAdjacencyList, '\n'
     """
     """displayMatchingRegion(scaffMap, refOrderList, refAdjacencyList,\

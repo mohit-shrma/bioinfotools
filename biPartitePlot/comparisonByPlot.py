@@ -50,8 +50,16 @@ def main():
                                                                 scaffs1FilePath,\
                                                                 scaffs2FilePath,\
                                                                 minMatchLen)
-        
-        scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
+        print 'scaffMap: ', scaffMap
+        #scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
+
+        #get hit counts which are parallel but separated by huge gap
+        conflictedCount, parallelCount,\
+            sepParallelCount = scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap)
+
+        print 'conflictedCount: ', conflictedCount
+        print 'parallelCount: ', parallelCount
+        print 'sepParallelCount: ', sepParallelCount
         
     elif argLen >= 3:
 
