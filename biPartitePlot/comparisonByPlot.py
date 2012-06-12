@@ -4,7 +4,7 @@ import scaffCoordsConv
 import contigsCoordsConv
 from multiprocessing import Pool
 import multiprocessing, logging
-
+import scaffMapPlotter
 
 def contigWorker((contigsFilePath, minMatchLen)):
     #get contig map for the passed contigs
@@ -46,20 +46,21 @@ def main():
         minMatchLen = int(sys.argv[4])
 
         #get scaff map for the passed sequences
-        scaffMap = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
+        scaffMap, scaffsLenDict  = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
                                                                 scaffs1FilePath,\
                                                                 scaffs2FilePath,\
                                                                 minMatchLen)
-        print 'scaffMap: ', scaffMap
-        #scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
+        #print 'scaffMap: ', scaffMap
+        scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
 
         #get hit counts which are parallel but separated by huge gap
-        conflictedCount, parallelCount,\
-            sepParallelCount = scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap)
+        conflictedCount, parallelCount, sepParallelCount =\
+            scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap, scaffsLenDict)
 
         print 'conflictedCount: ', conflictedCount
         print 'parallelCount: ', parallelCount
         print 'sepParallelCount: ', sepParallelCount
+        
         
     elif argLen >= 3:
 

@@ -24,24 +24,24 @@ class ScaffConstants:
     ScaleFactor = 1
 
     #columns specifying start and end positions of matching regions of ref
-    RefStartCol = 2#5 - 1
-    RefEndCol = 3#6 - 1
+    RefStartCol = 4#2#5 - 1
+    RefEndCol = 5#3#6 - 1
     
     #column specifying reference length
-    RefLenCol = 1#4 - 1
+    RefLenCol = 3#1#4 - 1
 
     #column specifying ref name
-    RefNameCol =  0#2 - 1
+    RefNameCol =  1#0#2 - 1
     
     #column specifying query length
-    QueryLenCol = 7#9 - 1 
+    QueryLenCol = 8#7#9 - 1 
 
     #column specifying query name
-    QueryNamecol = 4#7 - 1
+    QueryNamecol = 6#4#7 - 1
     
     #columns specifying start and end positions of matching regions of query
-    QueryStartCol = 5#10 - 1
-    QueryEndCol = 6#11 - 1
+    QueryStartCol = 9#5#10 - 1
+    QueryEndCol = 10#6#11 - 1
 
     #stats file scaff name
     StatsNameCol = 1 - 1
@@ -94,7 +94,7 @@ def getScaffMappedList(scaffMapFilePath,  minMatchedLen = 5000):
 
 #generate list of forms [('scaffName', 'len), ...]
 def getScaffsDetails(scaffsFilePath):
-    listScaffsRange = []
+    scaffsLenDict = {}
     try:
         scaffsFile = open(scaffsFilePath, 'r')
         header = scaffsFile.readline()
@@ -103,16 +103,20 @@ def getScaffsDetails(scaffsFilePath):
             scaffName = cols[ScaffConstants.StatsNameCol]
             scaffLen = float(cols[ScaffConstants.StatsLengthCol])
             if scaffLen:
-                listScaffsRange.append((scaffName, scaffLen))
+                scaffsLenDict[scaffName] = scaffLen
         scaffsFile.close()
     except IOError as (errno, strerror):
         print "I/O error({0}): {1}".format(errno, strerror)
-    return listScaffsRange
+    return scaffsLenDict
 
 
 def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
                                  minMatchLen):
 
+    scaffsDict1 = getScaffsDetails(scaffsFile1Path)
+    scaffsDict2 = getScaffsDetails(scaffsFile2Path)
+    scaffsLenDict = dict(scaffsDict1.items() + scaffsDict2.items())
+    
     #dictionary to keep scaffold mapping details
     scaffMap = {}
 
@@ -130,7 +134,7 @@ def parseScaffDirNGetMapInfo(scaffDir, scaffsFile1Path, scaffsFile2Path,\
                     scaffMap[refScaffName] = mappingInfos
                     totalHits += len(mappingInfos)
     print 'total hits: ', totalHits
-    return scaffMap
+    return scaffMap, scaffsLenDict
 
 
 def prepareAdjacencyLists(scaffMap):
@@ -219,7 +223,7 @@ def getOrderedClusterWNumIntersection((clusterRef, refAdjList, queryAdjList)):
 
 #return the count of hits which are parallel
 #but separated by huge gap in either scaffold
-def getMultiHitsCountsNDisp(scaffMap):
+def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
 
     conflictedCount = 0
     sepParallelCount = 0
@@ -255,24 +259,33 @@ def getMultiHitsCountsNDisp(scaffMap):
                     #check for parallel
                     if currQueryStart > prevQueryEnd:
                         #parallel not intersecting hit
+                        parallelCount += 1
                         #if parallel check for gap between them gr8r than
                         #half threshold or not
-                        displacementRatio =\
-                            float(currRefStart - prevRefEnd)\
-                            / float(currQueryStart - prevQueryEnd)
-                        if displacementRatio > 2 or displacementRatio < 0.5:
+                        refDisplacement = currRefStart - prevRefEnd
+                        queryDisplacement = currQueryStart - prevQueryEnd
+                        displacementRatio = float(refDisplacement)/float(queryDisplacement)
+                        if displacementRatio >= 1.5 or displacementRatio <= float(1)/1.5:
                             #gap between them gr8r than half of the other
                             scaffParallelCount += 1
+                            print 'currRefStart, prevRefEnd: ', currRefStart, prevRefEnd
+                            print 'refDisplacement: ', refDisplacement
+                            print 'currQueryStart, prevQueryEnd: ', currQueryStart, prevQueryEnd
+                            print 'queryDisplacement: ', queryDisplacement
                 else:
                     #append to processed scaffold list
                     processedScaff.append(prevQueryName)
                     
             prevMapInfo = mapInfo
-            
+
+        if scaffParallelCount != 0:
+            print 'parallelNDisplaced: ',refNode
+            print 'sortedMappingInfo: ', sortedMappingInfos
+            scaffMapPlotter.generateScaffPlot(refNode, scaffMap, scaffsLenDict)
+
         sepParallelCount += scaffParallelCount
         
     return conflictedCount, parallelCount, sepParallelCount
-
 
 
                         
@@ -323,6 +336,7 @@ def plotCrossMinimizedOrdering(scaffMap):
             queryOrderList += orderedCluster[1]
        
     print 'total intersections: ', totalIntersections
+
     """        
     print 'refOrderList: ', refOrderList, '\n'
     print 'queryOrderList: ', queryOrderList, '\n'
