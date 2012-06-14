@@ -87,18 +87,19 @@ def jobWriter(allArgDict):
                 jobsOutFile.write("/home/koronis/mohit/programs/lastz/lastz-distrib/bin/lastz " \
                                       + scaffoldFile + " " + secondScaffoldFilePath + " ")
 
-                jobsOutFile.write("--step=20 --seed=match12 --notransition --ambiguous=n --ambiguous=iupac ")
+                jobsOutFile.write("--step=20 --seed=match12 --notransition "\
+                                      + " --ambiguous=n  --ambiguous=iupac --gfextend ")
                 
                 if 'strict' in allArgDict:
-                    jobsOutFile.write("--match=1,5 --gfextend --nogapped --nochain ")
+                    jobsOutFile.write("--match=1,5  --nogapped --nochain ")
                 else:
-                    jobsOutFile.write("--identity=70 --gap=5,1 --chain --match=1,1 ")
+                    jobsOutFile.write("--identity=97 --gapped --chain ")
 
                 #find equivalent of dictionary exists
                 if 'exact' in allArgDict:
                     jobsOutFile.write("--exact="+allArgDict['exact']+" ")
                 else:
-                    jobsOutFile.write("--exact=40 ")
+                    jobsOutFile.write("--mismatch=30,1000 ")
 
                 if 'rdotplot' in allArgDict:
                     jobsOutFile.write("--rdotplot=" + currentJobOPFile + ".dotplot ")
