@@ -52,9 +52,11 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict):
     #sort by 0/refStart
     mappingInfos = scaffMap[scaffName]
     sortedMappingInfos = sorted(mappingInfos, key=lambda mapInfo: mapInfo[0][0])
+    queryNames = list(set([mapInfo[1] for mapInfo in mappingInfos]))
     prevOffset = 0
     prevQueryName = ''
-    colors = ['g','b']
+    colors = ['g','b', 'c', 'm', 'k', 'g','b', 'c', 'm', 'k']
+    colorDict = dict(zip(queryNames, colors))
     endColorInd = 0
     print 'plotting ', scaffName, ' .....'
     for mapInfo in sortedMappingInfos:
@@ -68,13 +70,12 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict):
         if prevQueryName != '' and  prevQueryName != currQueryName:
             #update offset
             prevOffset += lengthDict[prevQueryName] 
-            endColorInd = (endColorInd + 1) % 2
             
         #plot start vertices
         verticesStart = np.array([[0, currRefStart],\
                                       [0+PlotConsts.XSep,\
                                            prevOffset+currQueryStart]])
-        plot(verticesStart[:, 0], verticesStart[:, 1], color = colors[endColorInd])
+        plot(verticesStart[:, 0], verticesStart[:, 1], colorDict[currQueryName])
 
         #plot end vertices
         verticesEnd = np.array([[0, currRefEnd],\
