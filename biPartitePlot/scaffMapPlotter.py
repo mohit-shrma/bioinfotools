@@ -2,6 +2,8 @@ from pylab import *
 import numpy as np
 import coordsConverter
 import sys
+import os
+import matplotlib
 
 class PlotConsts:
 
@@ -45,20 +47,51 @@ def generatePlot(scaffMap, minMatchedLen, outFile = ''):
 
 
 #generate plot for passed scaffold        
-def generateScaffPlot(scaffName, scaffMap, lengthDict):
+def generateScaffPlot(scaffName, scaffMap, lengthDict, plotDir = None):
     #mappingInfo is of following form    
     # ([refStart, refEnd], queryScaffName,
     #  [queryStart, queryEnd], refMatchedLen)
     #sort by 0/refStart
     mappingInfos = scaffMap[scaffName]
     sortedMappingInfos = sorted(mappingInfos, key=lambda mapInfo: mapInfo[0][0])
-    queryNames = list(set([mapInfo[1] for mapInfo in mappingInfos]))
+
+    if plotDir is None:
+        #not passed any directory to store plot
+        #use Current directory to storeplot
+        plotDir = os.path.abspath("./parallelPlots")
+        if not os.path.exists(plotDir):
+            os.makedirs(plotDir)
+    else:
+        plotDir = os.path.abspath(plotDir)
+        
+    queryNames = []
+    for mapInfo in sortedMappingInfos:
+        if mapInfo[1] not in queryNames:
+            queryNames.append(mapInfo[1])
+    
     prevOffset = 0
     prevQueryName = ''
-    colors = ['g','b', 'c', 'm', 'k', 'g','b', 'c', 'm', 'k']
+
+    #prepare colors for different scaffold
+    colors = ['g','b', 'c', 'm', 'k', 'g','b', 'c', 'm', 'k','g','b', 'c', 'm',\
+                  'k', 'g','b', 'c', 'm', 'k']
     colorDict = dict(zip(queryNames, colors))
-    endColorInd = 0
+    
+    #prepare coordinates for the plot
+    queryNamesStart = {}
+    prevEnd = 0
+    for queryName in queryNames:
+        queryNamesStart[queryName] = prevEnd + 1
+        prevEnd = prevEnd + lengthDict[queryName]
+    
     print 'plotting ', scaffName, ' .....'
+    
+    #initialize py plot for non interactive backend
+    #matplotlib.use('Agg')
+    #indicate to pyplot that we have new figure
+    figure()
+    
+    
     for mapInfo in sortedMappingInfos:
         currRefStart = mapInfo[0][0]
         currRefEnd = mapInfo[0][1]
@@ -73,21 +106,26 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict):
             
         #plot start vertices
         verticesStart = np.array([[0, currRefStart],\
-                                      [0+PlotConsts.XSep,\
-                                           prevOffset+currQueryStart]])
+                                  [0+PlotConsts.XSep,\
+                                   queryNamesStart[currQueryName]\
+                                    + currQueryStart - 1]])
         plot(verticesStart[:, 0], verticesStart[:, 1], colorDict[currQueryName])
 
         #plot end vertices
         verticesEnd = np.array([[0, currRefEnd],\
-                                    [0+PlotConsts.XSep,\
-                                         prevOffset+currQueryEnd]])
-        plot(verticesEnd[:, 0], verticesEnd[:, 1], color = 'r')
+                                [0+PlotConsts.XSep,\
+                                 queryNamesStart[currQueryName]\
+                                  + currQueryEnd - 1]])
+        #plot(verticesEnd[:, 0], verticesEnd[:, 1], color = 'r')
+        plot(verticesEnd[:, 0], verticesEnd[:, 1], colorDict[currQueryName])
         
         prevQueryName = currQueryName
 
     ymin, ymax = ylim()   # return the current ylim
     ylim(-1, ymax)
     show()
+    #savefig(os.path.join(plotDir, scaffName + '.png'))
+
     
         
 #plot from adjacency list with indices representing vertices,\
@@ -105,7 +143,7 @@ def plotFromArrayAdjList(adjListA, adjListB, minMatchLen = 0):
     ymin, ymax = ylim()   # return the current ylim
     ylim(-1, ymax)
     show()
-            
+
 
         
 def plotFromLists(nodesA, nodesB, adjListA, minMatchLen = 0,\

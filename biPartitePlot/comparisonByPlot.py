@@ -5,6 +5,7 @@ import contigsCoordsConv
 from multiprocessing import Pool
 import multiprocessing, logging
 import scaffMapPlotter
+import mummerOutputConv
 
 def contigWorker((contigsFilePath, minMatchLen)):
     #get contig map for the passed contigs
@@ -51,28 +52,42 @@ def main():
                                                                 scaffs2FilePath,\
                                                                 minMatchLen)
         #print 'scaffMap: ', scaffMap
-        scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
+        #scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
 
         #get hit counts which are parallel but separated by huge gap
-        conflictedCount, parallelCount, sepParallelCount =\
+        """conflictedCount, parallelCount, sepParallelCount =\
             scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap, scaffsLenDict)
 
         print 'conflictedCount: ', conflictedCount
         print 'parallelCount: ', parallelCount
         print 'sepParallelCount: ', sepParallelCount
+        """
+        #print scaffMap['CGS00426']
+        scaffMapPlotter.generateScaffPlot('CGS00144', scaffMap, scaffsLenDict)
         
-        
-    elif argLen >= 3:
+    elif argLen >= 4:
 
         #contigs map file path
-        contigsFilePath = os.path.abspath(sys.argv[1])
+        mummerFilePath = os.path.abspath(sys.argv[1])
 
-        minMatchLenSeq = [int(sys.argv[2])]
+        minMatchLenSeq = int(sys.argv[2])
+        minIdentity = int(sys.argv[3])
+        
+        scaffMap, scaffsLenDict =  mummerOutputConv.getMapAndLen(mummerFilePath,\
+                                                                minMatchLenSeq,
+                                                                 minIdentity)
+        #get hit counts which are parallel but separated by huge gap
+        """conflictedCount, parallelCount, sepParallelCount =\
+            scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap, scaffsLenDict)
 
-        print 'calling child contigs processing workers: minMatchLen', minMatchLenSeq
-
-        #callContigWorkers(contigsFilePath, minMatchLenSeq)
-        contigWorker((contigsFilePath, minMatchLenSeq[0]))
+        print 'conflictedCount: ', conflictedCount
+        print 'parallelCount: ', parallelCount
+        print 'sepParallelCount: ', sepParallelCount
+        """
+        #print scaffMap['CGS00426']
+        #scaffMapPlotter.generateScaffPlot('CGS00426', scaffMap, scaffsLenDict)
+        #scaffMapPlotter.generateScaffPlot('CGS00021', scaffMap, scaffsLenDict)
+        #scaffMapPlotter.generateScaffPlot('CGS00110', scaffMap, scaffsLenDict)
     else:
         print 'err: files missin'
     

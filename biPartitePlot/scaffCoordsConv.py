@@ -248,7 +248,10 @@ def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
             #if current query already processed then a conflict found
             if currQueryName in processedScaff:
                 conflictedCount += 1
+                print 'conflicted scaffold: ', currQueryName
+                print 'refNode ', refNode
                 scaffParallelCount = 0
+                scaffMapPlotter.generateScaffPlot(refNode, scaffMap, scaffsLenDict)
                 break
             
             if prevMapInfo is not None:
@@ -265,13 +268,13 @@ def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
                         refDisplacement = currRefStart - prevRefEnd
                         queryDisplacement = currQueryStart - prevQueryEnd
                         displacementRatio = float(refDisplacement)/float(queryDisplacement)
-                        if displacementRatio >= 1.5 or displacementRatio <= float(1)/1.5:
+                        if displacementRatio >= 5 or displacementRatio <= float(1)/5:
                             #gap between them gr8r than half of the other
                             scaffParallelCount += 1
-                            print 'currRefStart, prevRefEnd: ', currRefStart, prevRefEnd
-                            print 'refDisplacement: ', refDisplacement
-                            print 'currQueryStart, prevQueryEnd: ', currQueryStart, prevQueryEnd
-                            print 'queryDisplacement: ', queryDisplacement
+                            #print 'currRefStart, prevRefEnd: ', currRefStart, prevRefEnd
+                            #print 'refDisplacement: ', refDisplacement
+                            #print 'currQueryStart, prevQueryEnd: ', currQueryStart, prevQueryEnd
+                            #print 'queryDisplacement: ', queryDisplacement
                 else:
                     #append to processed scaffold list
                     processedScaff.append(prevQueryName)
@@ -279,8 +282,8 @@ def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
             prevMapInfo = mapInfo
 
         if scaffParallelCount != 0:
-            print 'parallelNDisplaced: ',refNode
-            print 'sortedMappingInfo: ', sortedMappingInfos
+            #print 'parallelNDisplaced: ',refNode
+            #print 'sortedMappingInfo: ', sortedMappingInfos
             scaffMapPlotter.generateScaffPlot(refNode, scaffMap, scaffsLenDict)
 
         sepParallelCount += scaffParallelCount
