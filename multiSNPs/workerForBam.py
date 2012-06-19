@@ -31,8 +31,7 @@ def getToolsDict():
     tools['PICARD_TOOLS'] ="/home/koronis/mohit/programs/picard-tools-1.68"
     tools['GENOME_ANALYSIS_TK_JAR'] = "/home/koronis/mohit/programs/GenomeAnalysisTK/GenomeAnalysisTK.jar"
     tools['VARSCAN_JAR'] = "/home/koronis/mohit/programs/varscan/VarScan.v2.2.10.jar"
-    #tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone "
-    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 48 /home/koronis/mohit/programs/Drone/Drone "
+    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 12 /home/koronis/mohit/programs/Drone/Drone "
     return tools
 
 #a dictionary of all possible extensions
