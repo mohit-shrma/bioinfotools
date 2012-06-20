@@ -17,15 +17,18 @@ def getReads(readsDir):
             reads.append(name)
     return reads
 
+
 def getAbsPath(dir):
     absDir = os.path.abspath(dir)
     if not absDir.endswith('/'):
         absDir += '/'
     return absDir
 
+
 def callBamWorker((readPath, outDir, lockDirPath, fastaPath)):
     print "PID: ", os.getpid()
     return workerForBam.workerToGenBAM(readPath, outDir, lockDirPath, fastaPath)
+
 
 def callBamWorkers(readsDir, outDir, locksDir, fastaDir):
     reads = getReads(readsDir)
@@ -40,11 +43,13 @@ def callBamWorkers(readsDir, outDir, locksDir, fastaDir):
     pool.join()
     return results
 
+
 def isValidResults(results):
     if sum(results) == len(results):
         return True
     else:
         return False
+
 
 #concatenate all jobs in outDir to be executed by drone
 def combineAllBamJobs(outDir):
