@@ -136,7 +136,22 @@ public class IntervalTree extends RedBlackTree {
 		}
 	}
 	
-	public IntervalNode intervalSearch(IntervalNode query) {
+	
+	public RedBlackNode intervalSearch(IntervalNode query, 
+			RedBlackNode subTreeRoot) {
+		RedBlackNode x = subTreeRoot;
+		while (x != getLeaf() && !isOverlap(query, (IntervalNode)x) ) {
+			if (x.getLeft() != getLeaf() && 
+					((IntervalNode)x.getLeft()).getMaxHi() >= query.getLow()) {
+				x = x.getLeft();
+			} else {
+				x = x.getRight();
+			}
+		}
+		return x;
+	}
+	
+	public RedBlackNode intervalSearch(IntervalNode query) {
 		RedBlackNode x = getRoot();
 		while (x != getLeaf() && !isOverlap(query, (IntervalNode)x) ) {
 			if (x.getLeft() != getLeaf() && 
@@ -146,7 +161,33 @@ public class IntervalTree extends RedBlackTree {
 				x = x.getRight();
 			}
 		}
-		return (IntervalNode) x;
+		return x;
+	}
+	
+	//return length of not covered region or not mapped portion
+	public int getIntervalNotCovered(IntervalNode query) {
+		RedBlackNode searchRes = (intervalSearch(query));
+		int unMatchedLen = 0;
+		if (searchRes != getLeaf()) {
+			//check either partially found or completely found
+			if (query.getLow() >= ((IntervalNode)searchRes).getLow() 
+					&& query.getHigh() <= ((IntervalNode)searchRes).getHigh()) {
+				//fully covered
+				unMatchedLen = 0;
+			} else {
+				//partially covered
+				if (query.getLow() < ((IntervalNode)searchRes).getLow() ) {
+					unMatchedLen += ((IntervalNode)searchRes).getLow() - query.getLow() ;
+				}
+				if (query.getHigh() > ((IntervalNode)searchRes).getHigh()) {
+					unMatchedLen += query.getHigh() - ((IntervalNode)searchRes).getHigh();
+				}
+			}
+		} else {
+			//no result found, completely unmapped
+			unMatchedLen = query.getHigh() - query.getLow() + 1;
+		}
+		return unMatchedLen;
 	}
 	
 	private IntervalNode getMergedInterval(IntervalNode node1,

@@ -38,7 +38,7 @@ public class LastzOutputParser {
 			
 			CSVReader reader = new CSVReader(
 										new FileReader(fileName), '\t');
-			
+			//read the header
 			String line[] = reader.readNext();
 			
 			intervalTree = new IntervalTree();
@@ -179,6 +179,12 @@ public class LastzOutputParser {
 			str = str.substring(0, str.length()-1);
 		}
 		return str;
+	}
+	
+	public int getIntervalNonCoverage(int start, int end) {
+		int unMatchedLen = intervalTree.getIntervalNotCovered(
+											new IntervalNode(start, end));
+		return unMatchedLen;
 	}
 	
 	//TODO

@@ -2,8 +2,12 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Vector;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 import com.interval.IntervalNode;
 import com.interval.IntervalTree;
@@ -14,6 +18,16 @@ class RedBlackMain {
 	
 	private RedBlackTree redBlackTree;
 	private IntervalTree intervalTree;
+	
+	private static final int GENE_MAP_SCAFFID_COL = 1;
+	private static final int GENE_MAP_START_COL = 4;
+	private static final int GENE_MAP_END_COL = 5;
+	private static final String SCAFF_EXT= "fasta";
+	private static final String OUT_EXT= "out";
+	private static final int LASTZ_START_COL = 4;
+	private static final int LASTZ_END_COL = 5;
+	private static final int LASTZ_QNAME_COL = 6;
+	private static final int LASTZ_SIZE_COL = 3;
 	
 	public RedBlackMain() {
 		redBlackTree = new RedBlackTree();
@@ -45,7 +59,7 @@ class RedBlackMain {
 	}
 	
 	public void queryOverlapInterval(int low, int high) {
-		IntervalNode result = intervalTree.intervalSearch(
+		IntervalNode result = (IntervalNode) intervalTree.intervalSearch(
 													new IntervalNode(low, high));
 		if (result != intervalTree.getLeaf()) {
 			System.out.println(result.getKey() +"\t"
@@ -76,7 +90,10 @@ class RedBlackMain {
 	
 	public void processFile(String fileName) {
 		LastzOutputParser lastzOutputParser = new LastzOutputParser(fileName,
-															4, 5, 6, 3	);
+																LASTZ_START_COL, 
+																LASTZ_END_COL, 
+																LASTZ_QNAME_COL, 
+																LASTZ_SIZE_COL);
 		lastzOutputParser.parse();
 		//lastzOutputParser.printMergedWalk();
 		
@@ -87,6 +104,100 @@ class RedBlackMain {
 		System.out.println("ref. scaffold size : "
 							+ lastzOutputParser.getReferenceScaffoldSize());
 		System.out.println("Gaps count: "+lastzOutputParser.countGaps());
+	}
+	
+	
+	public HashMap<String, Integer> countGeneMappings(String dirName, 
+														String geneMapFileName,
+														String outputFileName) {
+		
+		File dir = new File(dirName);
+		LastzOutputParser lastzOutputParser = null;
+		HashMap<String, Integer> scaffUnMatchedCount = 
+												new HashMap<String, Integer>();
+		try {
+			CSVReader geneMapReader = new CSVReader(
+										new FileReader(geneMapFileName), '\t');
+			//read the header
+			String[] line = geneMapReader.readNext();
+			
+			//current scaffold being operated
+			String currScaffName = "";
+			String newScaffName = "";
+			int geneStart = -1;
+			int geneEnd = -1;
+			String scaffFileName = "";
+			File scaffOutFile = null;
+			int unMatchedLen = 0;
+			int totalLen = 0;
+			FileOutputStream fos = new FileOutputStream(outputFileName);;
+			BufferedOutputStream bos = new BufferedOutputStream(fos);
+			while ((line = geneMapReader.readNext()) != null && line.length > 1) {
+				newScaffName = line[GENE_MAP_SCAFFID_COL];
+				geneStart = Integer.parseInt(line[GENE_MAP_START_COL]);
+				geneEnd = Integer.parseInt(line[GENE_MAP_END_COL]);
+				
+				if (!newScaffName.equalsIgnoreCase(currScaffName)) {
+					//got a new scaffold, read the scaffold outputfile
+					//from directory
+					scaffUnMatchedCount.put(currScaffName, unMatchedLen);
+					bos.write((currScaffName + '\t' + 
+								unMatchedLen + '\n').getBytes());
+					scaffFileName = dir.getCanonicalPath() + File.separatorChar
+									+ newScaffName + "." + SCAFF_EXT + "." 
+									+ OUT_EXT;
+					scaffOutFile = new File(scaffFileName);
+					lastzOutputParser = new LastzOutputParser(
+												scaffOutFile.getCanonicalPath(),
+												LASTZ_START_COL, 
+												LASTZ_END_COL, 
+												LASTZ_QNAME_COL, 
+												LASTZ_SIZE_COL);
+					lastzOutputParser.parse();
+					unMatchedLen = 0;
+					totalLen = 0;
+					currScaffName = newScaffName;
+				} else {
+					//same scaffold as previous, no need to read scaffold file 
+					//from dir
+				}
+				//check for the conflict of interval [start, end] in current
+				//scaffold interval tree
+				unMatchedLen += lastzOutputParser.getIntervalNonCoverage(
+														geneStart, geneEnd);
+				totalLen += geneEnd - geneStart + 1;
+			}
+			
+			bos.write((currScaffName + '\t' + unMatchedLen + '\n').getBytes());
+			
+			bos.flush();
+			
+			if (bos != null) {
+				try {
+					bos.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			if (fos != null) {
+				try {
+					fos.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return scaffUnMatchedCount;
 	}
 	
 	public void processDir(String dirname, String outputFileName) {
@@ -222,12 +333,18 @@ class RedBlackMain {
 		
 		String dirName = "";
 		String opFileName = "";
+		String geneMapFileName = "";
 		
 		//parse commandline arguments
-		if (args.length > 1) {
+		if (args.length == 2) {
 			dirName = args[0];
 			opFileName = args[1];
 			obj.processDir(dirName, opFileName);
+		} else if (args.length == 3) {
+			dirName = args[0];
+			geneMapFileName = args[1];
+			opFileName = args[2];
+			obj.countGeneMappings(dirName, geneMapFileName, opFileName);
 		} else {
 			//not sufficient argument passed
 			System.out.println("missing either input directory or output file");
