@@ -132,8 +132,9 @@ class RedBlackMain {
 			int totalLen = 0;
 			FileOutputStream fos = new FileOutputStream(outputFileName);;
 			BufferedOutputStream bos = new BufferedOutputStream(fos);
-			bos.write(("ScaffName\tUnMatchedLen\tTotalGeneLen\n").getBytes());
-			while ((line = geneMapReader.readNext()) != null && line.length > 1) {
+			bos.write(("ScaffName\tUnMatchedLen\tTotalGeneLen\tPcNotFound\n").getBytes());
+			while ((line = geneMapReader.readNext()) != null 
+						&& line.length > 1) {
 				newScaffName = line[GENE_MAP_SCAFFID_COL];
 				geneStart = Integer.parseInt(line[GENE_MAP_START_COL]);
 				geneEnd = Integer.parseInt(line[GENE_MAP_END_COL]);
@@ -145,7 +146,9 @@ class RedBlackMain {
 						scaffUnMatchedCount.put(currScaffName, unMatchedLen);
 						bos.write((currScaffName + '\t' + 
 									unMatchedLen + '\t' 
-									+ totalLen+ '\n').getBytes());
+									+ totalLen + '\t' 
+									+ (((float)unMatchedLen)/totalLen)*100  
+									+ '\n').getBytes());
 					}
 					lastzOutputParser = null;
 					//init to -1 to indicate case where file don't exists
@@ -183,7 +186,9 @@ class RedBlackMain {
 			}
 			
 			bos.write((currScaffName + '\t' + unMatchedLen + '\t' 
-						+ totalLen + '\n').getBytes());
+						+ totalLen + '\t' 
+						+ (((float)unMatchedLen)/totalLen)*100 
+						+ '\n').getBytes());
 			
 			bos.flush();
 			
