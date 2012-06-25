@@ -132,6 +132,7 @@ class RedBlackMain {
 			int totalLen = 0;
 			FileOutputStream fos = new FileOutputStream(outputFileName);;
 			BufferedOutputStream bos = new BufferedOutputStream(fos);
+			bos.write(("ScaffName\tUnMatchedLen\tTotalGeneLen\n").getBytes());
 			while ((line = geneMapReader.readNext()) != null && line.length > 1) {
 				newScaffName = line[GENE_MAP_SCAFFID_COL];
 				geneStart = Integer.parseInt(line[GENE_MAP_START_COL]);
@@ -140,22 +141,33 @@ class RedBlackMain {
 				if (!newScaffName.equalsIgnoreCase(currScaffName)) {
 					//got a new scaffold, read the scaffold outputfile
 					//from directory
-					scaffUnMatchedCount.put(currScaffName, unMatchedLen);
-					bos.write((currScaffName + '\t' + 
-								unMatchedLen + '\n').getBytes());
+					if (currScaffName.length() > 0) {
+						scaffUnMatchedCount.put(currScaffName, unMatchedLen);
+						bos.write((currScaffName + '\t' + 
+									unMatchedLen + '\t' 
+									+ totalLen+ '\n').getBytes());
+					}
+					lastzOutputParser = null;
+					//init to -1 to indicate case where file don't exists
+					unMatchedLen = -1;
+					totalLen = 0;
+					
+					
 					scaffFileName = dir.getCanonicalPath() + File.separatorChar
 									+ newScaffName + "." + SCAFF_EXT + "." 
 									+ OUT_EXT;
 					scaffOutFile = new File(scaffFileName);
-					lastzOutputParser = new LastzOutputParser(
-												scaffOutFile.getCanonicalPath(),
-												LASTZ_START_COL, 
-												LASTZ_END_COL, 
-												LASTZ_QNAME_COL, 
-												LASTZ_SIZE_COL);
-					lastzOutputParser.parse();
-					unMatchedLen = 0;
-					totalLen = 0;
+					
+					if (scaffOutFile.exists()) {
+						lastzOutputParser = new LastzOutputParser(
+								scaffOutFile.getCanonicalPath(),
+								LASTZ_START_COL, 
+								LASTZ_END_COL, 
+								LASTZ_QNAME_COL, 
+								LASTZ_SIZE_COL);
+						lastzOutputParser.parse();
+						unMatchedLen = 0;
+					} 
 					currScaffName = newScaffName;
 				} else {
 					//same scaffold as previous, no need to read scaffold file 
@@ -163,12 +175,15 @@ class RedBlackMain {
 				}
 				//check for the conflict of interval [start, end] in current
 				//scaffold interval tree
-				unMatchedLen += lastzOutputParser.getIntervalNonCoverage(
+				if (null != lastzOutputParser) {
+					unMatchedLen += lastzOutputParser.getIntervalNonCoverage(
 														geneStart, geneEnd);
+				}
 				totalLen += geneEnd - geneStart + 1;
 			}
 			
-			bos.write((currScaffName + '\t' + unMatchedLen + '\n').getBytes());
+			bos.write((currScaffName + '\t' + unMatchedLen + '\t' 
+						+ totalLen + '\n').getBytes());
 			
 			bos.flush();
 			

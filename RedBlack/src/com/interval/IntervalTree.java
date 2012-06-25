@@ -164,12 +164,12 @@ public class IntervalTree extends RedBlackTree {
 		return x;
 	}
 	
-	//return length of not covered region or not mapped portion
-	public int getIntervalNotCovered(IntervalNode query) {
-		RedBlackNode searchRes = (intervalSearch(query));
+	public int getRegionLenNotCovered(IntervalNode query, 
+										RedBlackNode subTreeRoot) {
 		int unMatchedLen = 0;
+		RedBlackNode searchRes = intervalSearch(query, subTreeRoot);
 		if (searchRes != getLeaf()) {
-			//check either partially found or completely found
+			//check if partially covered or fully covered
 			if (query.getLow() >= ((IntervalNode)searchRes).getLow() 
 					&& query.getHigh() <= ((IntervalNode)searchRes).getHigh()) {
 				//fully covered
@@ -177,16 +177,33 @@ public class IntervalTree extends RedBlackTree {
 			} else {
 				//partially covered
 				if (query.getLow() < ((IntervalNode)searchRes).getLow() ) {
-					unMatchedLen += ((IntervalNode)searchRes).getLow() - query.getLow() ;
+					//search for interval query.low, searchRes.low - 1
+					unMatchedLen += getRegionLenNotCovered(
+										new IntervalNode(query.getLow(), 
+										((IntervalNode)searchRes).getLow() -1),
+										searchRes.getLeft());
 				}
+				
 				if (query.getHigh() > ((IntervalNode)searchRes).getHigh()) {
-					unMatchedLen += query.getHigh() - ((IntervalNode)searchRes).getHigh();
+					//search for interval searchRes.hi + 1, query.hi
+					unMatchedLen += getRegionLenNotCovered(
+										new IntervalNode(((IntervalNode)searchRes).getHigh() + 1, 
+												query.getHigh()),
+										searchRes.getRight());
 				}
 			}
 		} else {
-			//no result found, completely unmapped
+			//no res found, completely uncovered
 			unMatchedLen = query.getHigh() - query.getLow() + 1;
 		}
+		
+		return unMatchedLen;
+	}
+	
+	//return length of not covered region or not mapped portion
+	public int getIntervalNotCovered(IntervalNode query) {
+		int unMatchedLen = 0;
+		unMatchedLen = getRegionLenNotCovered(query, getRoot());
 		return unMatchedLen;
 	}
 	
