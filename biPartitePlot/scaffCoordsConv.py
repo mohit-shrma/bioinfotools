@@ -268,7 +268,10 @@ def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
                         refDisplacement = currRefStart - prevRefEnd
                         queryDisplacement = currQueryStart - prevQueryEnd
                         displacementRatio = float(refDisplacement)/float(queryDisplacement)
-                        if displacementRatio >= 5 or displacementRatio <= float(1)/5:
+                        if (displacementRatio >= 2\
+                                or displacementRatio <= float(1)/2)\
+                                and (math.fabs(refDisplacement) >= 500\
+                                         or math.fabs(queryDisplacement) >= 500):
                             #gap between them gr8r than half of the other
                             scaffParallelCount += 1
                             #print 'currRefStart, prevRefEnd: ', currRefStart, prevRefEnd
