@@ -84,14 +84,20 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict, plotDir = None):
         queryNamesStart[queryName] = prevEnd + 1
         prevEnd = prevEnd + lengthDict[queryName]
     
-    print 'plotting ', scaffName, ' .....'
+    print 'plotting ', scaffName#, lengthDict[scaffName], ' .....'
     
     #initialize py plot for non interactive backend
-    #matplotlib.use('Agg')
+    matplotlib.use('Agg')
     #indicate to pyplot that we have new figure
     figure()
-    
-    
+    #get handle to axes
+    ax = gca()
+    #array to keep track which text plotted or not
+    texted = []
+    #remove x-axis
+    ax.xaxis.set_visible(False)
+
+
     for mapInfo in sortedMappingInfos:
         currRefStart = mapInfo[0][0]
         currRefEnd = mapInfo[0][1]
@@ -109,22 +115,32 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict, plotDir = None):
                                   [0+PlotConsts.XSep,\
                                    queryNamesStart[currQueryName]\
                                     + currQueryStart - 1]])
-        plot(verticesStart[:, 0], verticesStart[:, 1], colorDict[currQueryName])
 
         #plot end vertices
         verticesEnd = np.array([[0, currRefEnd],\
                                 [0+PlotConsts.XSep,\
                                  queryNamesStart[currQueryName]\
                                   + currQueryEnd - 1]])
-        #plot(verticesEnd[:, 0], verticesEnd[:, 1], color = 'r')
-        plot(verticesEnd[:, 0], verticesEnd[:, 1], colorDict[currQueryName])
+
+        fill([0, 0, 0+PlotConsts.XSep, 0+PlotConsts.XSep],\
+                 [currRefStart, currRefEnd,\
+                      queryNamesStart[currQueryName] + currQueryEnd - 1,\
+                      queryNamesStart[currQueryName] + currQueryStart - 1],\
+                 colorDict[currQueryName], edgecolor=colorDict[currQueryName])
+
+        #assign query name to plotted scaffold
+        if currQueryName not in texted:
+            ax.text(0+PlotConsts.XSep-5, queryNamesStart[currQueryName]\
+                        + ((currQueryEnd + currQueryStart)/2) -1, currQueryName,\
+                        fontsize=10)
+            texted.append(currQueryName)
         
         prevQueryName = currQueryName
-
+        #print currQueryName, lengthDict[currQueryName]
     ymin, ymax = ylim()   # return the current ylim
     ylim(-1, ymax)
-    show()
-    #savefig(os.path.join(plotDir, scaffName + '.png'))
+    #show()
+    savefig(os.path.join(plotDir, scaffName + '.png'))
 
     
         
