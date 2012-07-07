@@ -158,8 +158,8 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
                                                queryAdjList)
 
     
-    print 'refNodes b4 cross min: ', refNodes
-    print 'queryNodes b4 cross min: ', queryNodes
+    #print 'refNodes b4 cross min: ', refNodes
+    #print 'queryNodes b4 cross min: ', queryNodes
     
     #apply barycenter heuristices alternately on ref then query until their
     #position remains same in order

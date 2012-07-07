@@ -46,14 +46,32 @@ def main():
         #min match length
         minMatchLen = int(sys.argv[4])
 
-        #get scaff map for the passed sequences
-        scaffMap, scaffsLenDict  = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
+        #minMatchList =[ 100000, 75000, 50000, 25000, 15000]
+        minMatchList =[25000]
+
+        for minMatchLen in minMatchList:
+            print '******** ' + str(minMatchLen) + ' *********'
+            scaffMap, scaffsLenDict  = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
                                                                 scaffs1FilePath,\
                                                                 scaffs2FilePath,\
                                                                 minMatchLen)
+            conflictedCount, parallelCount, sepParallelCount =\
+                scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap, scaffsLenDict, minMatchLen)
+            print 'conflictedCount: ', conflictedCount
+            print 'parallelCount: ', parallelCount
+            print 'sepParallelCount: ', sepParallelCount
+            
+        #get scaff map for the passed sequences
+        """scaffMap, scaffsLenDict  = scaffCoordsConv.parseScaffDirNGetMapInfo(scaffsDir,\
+                                                                scaffs1FilePath,\
+                                                                scaffs2FilePath,\
+                                                                minMatchLen)"""
         #print 'scaffMap: ', scaffMap
         #scaffCoordsConv.plotCrossMinimizedOrdering(scaffMap)
 
+        #print 'JH000049: ', scaffMap['JH000049']
+        #scaffMapPlotter.generateScaffPlot('CGS00426', scaffMap, scaffsLenDict)
+        
         #get hit counts which are parallel but separated by huge gap
         """conflictedCount, parallelCount, sepParallelCount =\
             scaffCoordsConv.getMultiHitsCountsNDisp(scaffMap, scaffsLenDict)
@@ -62,9 +80,10 @@ def main():
         print 'parallelCount: ', parallelCount
         print 'sepParallelCount: ', sepParallelCount
         """
-        #print scaffMap['CGS00426']
-        scaffMapPlotter.generateScaffPlot('CGS00144', scaffMap, scaffsLenDict)
-        
+
+        """
+        scaffMapPlotter.generateScaffPlot('CGS00062', scaffMap, scaffsLenDict)
+        """
     elif argLen >= 4:
 
         #contigs map file path

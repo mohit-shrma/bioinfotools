@@ -223,7 +223,7 @@ def getOrderedClusterWNumIntersection((clusterRef, refAdjList, queryAdjList)):
 
 #return the count of hits which are parallel
 #but separated by huge gap in either scaffold
-def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
+def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict, minMatchLen = None):
 
     conflictedCount = 0
     sepParallelCount = 0
@@ -251,7 +251,9 @@ def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
                 print 'conflicted scaffold: ', currQueryName
                 print 'refNode ', refNode
                 scaffParallelCount = 0
-                scaffMapPlotter.generateScaffPlot(refNode, scaffMap, scaffsLenDict)
+                scaffMapPlotter.generateScaffPlot(refNode, scaffMap,\
+                                                      scaffsLenDict,\
+                                                      minMatchLen)
                 break
             
             if prevMapInfo is not None:
@@ -287,7 +289,8 @@ def getMultiHitsCountsNDisp(scaffMap, scaffsLenDict):
         if scaffParallelCount != 0:
             #print 'parallelNDisplaced: ',refNode
             #print 'sortedMappingInfo: ', sortedMappingInfos
-            scaffMapPlotter.generateScaffPlot(refNode, scaffMap, scaffsLenDict)
+            scaffMapPlotter.generateScaffPlot(refNode, scaffMap, scaffsLenDict,\
+                                                  minMatchLen)
 
         sepParallelCount += scaffParallelCount
         
@@ -333,6 +336,10 @@ def plotCrossMinimizedOrdering(scaffMap):
     refOrderList = []
     queryOrderList = []
     totalIntersections = 0
+
+    refNotIntersOrderList = []
+    queryNotIntersOrderList = []
+    
     #from ordered clusters separate clusters with intersections
     for orderedCluster in orderedClusters:
         numIntersect = orderedCluster[2]
@@ -340,7 +347,9 @@ def plotCrossMinimizedOrdering(scaffMap):
         if numIntersect != 0:
             refOrderList += orderedCluster[0]
             queryOrderList += orderedCluster[1]
-       
+        else:
+            refNotIntersOrderList += orderedCluster[0]
+            queryNotIntersOrderList += orderedCluster[1]
     print 'total intersections: ', totalIntersections
 
     """        
@@ -358,13 +367,24 @@ def plotCrossMinimizedOrdering(scaffMap):
     #print refOrderList, queryOrderList
     scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
                                       refAdjacencyList, 0, False)
+
+    #plot non intersecting clusters
+    #as reported after cross-minimization
+    scaffMapPlotter.plotFromLists(refNotIntersOrderList, queryNotIntersOrderList,\
+                                      refAdjacencyList, 0, False)
+
     
-    
-    #write the ordered graph file
+    #write the ordered graph intersect file
     with open('orderedScaffs.gexf', 'w') as graphFile:
         xmlGraphStr = GEXFWriter.getGexfXMLString(refAdjacencyList,\
                                                       refOrderList,\
                                                       queryOrderList)
         graphFile.write(xmlGraphStr)
 
-        
+    #write the ordered graph non-intersect file
+    with open('orderedScaffsNonInters.gexf', 'w') as graphFile:
+        xmlGraphStr = GEXFWriter.getGexfXMLString(refAdjacencyList,\
+                                                      refNotIntersOrderList,\
+                                                      queryNotIntersOrderList)
+        graphFile.write(xmlGraphStr)
+

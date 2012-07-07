@@ -47,7 +47,8 @@ def generatePlot(scaffMap, minMatchedLen, outFile = ''):
 
 
 #generate plot for passed scaffold        
-def generateScaffPlot(scaffName, scaffMap, lengthDict, plotDir = None):
+def generateScaffPlot(scaffName, scaffMap, lengthDict, minMatchLen = None,\
+                          plotDir = None):
     #mappingInfo is of following form    
     # ([refStart, refEnd], queryScaffName,
     #  [queryStart, queryEnd], refMatchedLen)
@@ -58,7 +59,7 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict, plotDir = None):
     if plotDir is None:
         #not passed any directory to store plot
         #use Current directory to storeplot
-        plotDir = os.path.abspath("./parallelPlots")
+        plotDir = os.path.abspath("./parallelPlots" + str(minMatchLen))
         if not os.path.exists(plotDir):
             os.makedirs(plotDir)
     else:
