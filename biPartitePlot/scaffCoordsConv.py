@@ -303,26 +303,26 @@ def plotCrossMinimizedOrdering(scaffMap):
 
     #try to plot before removing 1-1 or 1-many mappings
     refAdjacencyList, queryAdjacencyList = prepareAdjacencyLists(scaffMap)
-    refList = refAdjacencyList.keys()
-    refList.sort()
-    queryList = queryAdjacencyList.keys()
-    queryList.sort()
-    scaffMapPlotter.plotFromLists(refList,\
-                                      queryList,\
-                                      refAdjacencyList)
+    #refList = refAdjacencyList.keys()
+    #refList.sort()
+    #queryList = queryAdjacencyList.keys()
+    #queryList.sort()
+    #scaffMapPlotter.plotFromLists(refList,\
+    #                                  queryList,\
+    #                                  refAdjacencyList)
     #remove contained in itself one-to-many mapping before
     #reordering
     removeOneToManyMapping(refAdjacencyList, queryAdjacencyList)
     removeOneToManyMapping(queryAdjacencyList, refAdjacencyList)
 
-    refList = refAdjacencyList.keys()
-    refList.sort()
-    queryList = queryAdjacencyList.keys()
-    queryList.sort()
+    #refList = refAdjacencyList.keys()
+    #refList.sort()
+    #queryList = queryAdjacencyList.keys()
+    #queryList.sort()
     #print refList, queryList
-    scaffMapPlotter.plotFromLists(refList,\
-                                      queryList,\
-                                      refAdjacencyList)
+    #scaffMapPlotter.plotFromLists(refList,\
+    #                                  queryList,\
+    #                                  refAdjacencyList)
 
     #get connected clusters
     connectedRefComps = graphUtil.findConnectedComps(refAdjacencyList,\
@@ -333,23 +333,20 @@ def plotCrossMinimizedOrdering(scaffMap):
                               [(comp, refAdjacencyList, queryAdjacencyList)\
                                    for comp in connectedRefComps])
 
-    refOrderList = []
-    queryOrderList = []
     totalIntersections = 0
 
-    refNotIntersOrderList = []
-    queryNotIntersOrderList = []
+    intersectingClusters = []
+    nonIntersectingClusters = []
     
     #from ordered clusters separate clusters with intersections
     for orderedCluster in orderedClusters:
         numIntersect = orderedCluster[2]
         totalIntersections += numIntersect
         if numIntersect != 0:
-            refOrderList += orderedCluster[0]
-            queryOrderList += orderedCluster[1]
+            intersectingClusters.append(orderedCluster)
         else:
-            refNotIntersOrderList += orderedCluster[0]
-            queryNotIntersOrderList += orderedCluster[1]
+            nonIntersectingClusters.append(orderedCluster)
+
     print 'total intersections: ', totalIntersections
 
     """        
@@ -365,26 +362,24 @@ def plotCrossMinimizedOrdering(scaffMap):
     #plot only these interesectiong refs cluster in the order, 
     #as reported after cross-minimization
     #print refOrderList, queryOrderList
-    scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
-                                      refAdjacencyList, 0, False)
+    #scaffMapPlotter.plotFromLists(refOrderList, queryOrderList,\
+    #                                  refAdjacencyList, 0, False)
 
     #plot non intersecting clusters
     #as reported after cross-minimization
-    scaffMapPlotter.plotFromLists(refNotIntersOrderList, queryNotIntersOrderList,\
-                                      refAdjacencyList, 0, False)
+    #scaffMapPlotter.plotFromLists(refNotIntersOrderList, queryNotIntersOrderList,\
+    #                                  refAdjacencyList, 0, False)
 
     
     #write the ordered graph intersect file
     with open('orderedScaffs.gexf', 'w') as graphFile:
-        xmlGraphStr = GEXFWriter.getGexfXMLString(refAdjacencyList,\
-                                                      refOrderList,\
-                                                      queryOrderList)
+        xmlGraphStr = GEXFWriter.getGexfXMLStringFromCluster(refAdjacencyList,\
+                                                      intersectingClusters)
         graphFile.write(xmlGraphStr)
 
     #write the ordered graph non-intersect file
     with open('orderedScaffsNonInters.gexf', 'w') as graphFile:
-        xmlGraphStr = GEXFWriter.getGexfXMLString(refAdjacencyList,\
-                                                      refNotIntersOrderList,\
-                                                      queryNotIntersOrderList)
+        xmlGraphStr = GEXFWriter.getGexfXMLStringFromCluster(refAdjacencyList,\
+                                                      nonIntersectingClusters)
         graphFile.write(xmlGraphStr)
 
