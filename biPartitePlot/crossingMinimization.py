@@ -171,7 +171,7 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
 
     #initialize ref Rank Dict
     refRankDict = {}
-    while positionChanged:
+    while positionChanged or counter < 2:
         positionChanged = False
         if counter%2 == 0:
             #choose ref nodes to play around
