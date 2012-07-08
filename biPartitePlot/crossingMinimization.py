@@ -171,7 +171,12 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
 
     #initialize ref Rank Dict
     refRankDict = {}
-    while positionChanged or counter < 2:
+
+    #strikes to maintain atleast one more trial on failure
+    firstStrike = False
+    secondStrike = False
+    
+    while not secondStrike:
         positionChanged = False
         if counter%2 == 0:
             #choose ref nodes to play around
@@ -185,6 +190,14 @@ def minimumCrossingOrdering(refAdjList, queryAdjList):
             queryNodes, positionChanged = applyBarycenterHeuristics(queryNodes,\
                                                                         queryAdjList,\
                                                                         refRankDict)
+        if not positionChanged  and not firstStrike:
+            firstStrike = True
+        elif not positionChanged and firstStrike:
+            secondStrike = True
+        elif positionChanged:
+            firstStrike = False
+            secondStrike = False
+
         counter += 1
     return refNodes, queryNodes
 
