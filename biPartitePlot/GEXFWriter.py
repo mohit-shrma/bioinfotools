@@ -90,21 +90,16 @@ def getAllNodesStringFromCluster(nodeClusters):
         refY, queryY, clusterNodesString = getYnClusterString(nodeCluster,\
                                                                   refX, refY,\
                                                                   queryX, queryY)
-        if refY > GEXFWriterConstants.MAX_Y_OFFSET \
-                or queryY > GEXFWriterConstants.MAX_Y_OFFSET:
-            #either Y exceeds max offset limit
-            #reset refY, refX, queryY, queryX to new block location
-            refX = refX + GEXFWriterConstants.REF_QUERY_DIST + \
-                GEXFWriterConstants.REF_QUERY_BLOCK_DIST
-            refY = 0
 
-            queryX = refX + GEXFWriterConstants.REF_QUERY_DIST
-            queryY = 0
+        #initialize coords for next cluster
+        #reset refY, refX, queryY, queryX to new block location
+        refX = refX + GEXFWriterConstants.REF_QUERY_DIST + \
+            GEXFWriterConstants.REF_QUERY_BLOCK_DIST
+        refY = 0
 
-            #relayout cluster with new coordinates
-            refY, queryY, clusterNodesString = getYnClusterString(nodeCluster,\
-                                                                      refX, refY,\
-                                                                      queryX, queryY)
+        queryX = refX + GEXFWriterConstants.REF_QUERY_DIST
+        queryY = 0
+        
         allNodes.append(clusterNodesString)
     
     return '\n'.join(allNodes)        
