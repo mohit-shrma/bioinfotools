@@ -111,30 +111,45 @@ def generateScaffPlot(scaffName, scaffMap, lengthDict, minMatchLen = None,\
             #update offset
             prevOffset += lengthDict[prevQueryName] 
             
-        #plot start vertices
+        #start vertices
         verticesStart = np.array([[0, currRefStart],\
                                   [0+PlotConsts.XSep,\
                                    queryNamesStart[currQueryName]\
                                     + currQueryStart - 1]])
 
-        #plot end vertices
+        #end vertices
         verticesEnd = np.array([[0, currRefEnd],\
                                 [0+PlotConsts.XSep,\
                                  queryNamesStart[currQueryName]\
                                   + currQueryEnd - 1]])
 
+        #fill the path between polygon created by start vertices & end vert
         fill([0, 0, 0+PlotConsts.XSep, 0+PlotConsts.XSep],\
                  [currRefStart, currRefEnd,\
                       queryNamesStart[currQueryName] + currQueryEnd - 1,\
                       queryNamesStart[currQueryName] + currQueryStart - 1],\
                  colorDict[currQueryName], edgecolor=colorDict[currQueryName])
 
+        #mark the reference end point
+        plot(np.array([0, 5]),
+             np.array([lengthDict[scaffName],\
+                          lengthDict[scaffName]]),\
+                          color='r')        
+        
+        #mark the query end points
+        plot(np.array([0+PlotConsts.XSep - 5, 0+PlotConsts.XSep]),
+             np.array([queryNamesStart[currQueryName]+lengthDict[currQueryName],\
+                          queryNamesStart[currQueryName]+lengthDict[currQueryName]]),\
+                          color='r')        
+                          
+        
         #assign query name to plotted scaffold
         if currQueryName not in texted:
             ax.text(0+PlotConsts.XSep-5, queryNamesStart[currQueryName]\
                         + ((currQueryEnd + currQueryStart)/2) -1, currQueryName,\
                         fontsize=10)
             texted.append(currQueryName)
+            
         
         prevQueryName = currQueryName
         #print currQueryName, lengthDict[currQueryName]
