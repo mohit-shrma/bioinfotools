@@ -22,15 +22,18 @@ public class LastzOutputParser {
 	private int nameCol;
 	private int sizeScaffoldCol;
 	private int sizeScaffold;
+	private int minMatchLen;
 	
 	//"", 4, 5, 1, 3 
-	public LastzOutputParser(String fileName, int startCol, int endCol,
+	public LastzOutputParser(String fileName, 
+								int minMatchLen, int startCol, int endCol,
 								int nameCol, int sizeScaffoldCol) {
 		this.fileName = fileName;
 		this.startCol = startCol;
 		this.endCol = endCol;
 		this.nameCol = nameCol;
 		this.sizeScaffoldCol = sizeScaffoldCol;
+		this.minMatchLen = minMatchLen;
 	}
 	
 	public void parse() {
@@ -44,12 +47,20 @@ public class LastzOutputParser {
 			intervalTree = new IntervalTree();
 			scaffoldNames = new Vector<String>();
 			String tempName = "";
+			int start = -1;
+			int end = -1;
 			while ((line = reader.readNext()) != null) {
+				
 				tempName = line[nameCol];
-				intervalTree.insert(new IntervalNode(
-											Integer.parseInt(line[startCol]), 
-											Integer.parseInt(line[endCol]),
-											tempName));
+				start = Integer.parseInt(line[startCol]);
+				end = Integer.parseInt(line[endCol]);
+				
+				if ((end - start + 1) < minMatchLen) {
+					continue;
+				}
+				
+				intervalTree.insert(new IntervalNode(start, end, tempName));
+				
 				if (scaffoldNames.isEmpty()) {
 					scaffoldNames.add(tempName);
 					sizeScaffold = Integer.parseInt(line[sizeScaffoldCol]);
@@ -58,7 +69,6 @@ public class LastzOutputParser {
 				}
 				
 			}
-			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
