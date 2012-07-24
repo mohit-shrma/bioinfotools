@@ -4,10 +4,15 @@ query """
 
 import sys
 import os
-from pylab import *
+
 import numpy as np
 import matplotlib
 
+#needed following to run on strong bad 
+matplotlib.use('PS')
+
+
+from pylab import *
 
 #class to hold some constants
 class DpConsts:
@@ -49,8 +54,9 @@ def plotAlignment(alignmentIpFileName, refCoords, queryCoords):
     #initialize py plot for non interactive backend
     matplotlib.use('Agg')
 
+    #needed following to run on strong bad
     #indicate to pyplot that we have new figure
-    figure()
+    #figure()
 
     with open(alignmentIpFileName, 'r') as alignIpFile:
         header = alignIpFile.readline()
@@ -69,15 +75,30 @@ def plotAlignment(alignmentIpFileName, refCoords, queryCoords):
             queryEnd = queryCoords[queryScaffName][0]\
                 + int(line[DpConsts.QueryEndCol]) - 1
 
-            #TODO: think for -ve strand 
-
+            #identify  rev strand, -ve slope -> rev strand, +ve slope -> fwd strand  
+            slope = -101
+            if refEnd - refStart != 0:
+                slope = float(queryEnd - queryStart) / float(refEnd - refStart)
+                
+            plotColor = ''    
             #plot the line between start and end points
-            plot([refStart, refEnd], [queryStart, queryEnd], color = 'r')
+            if slope == -101:
+                plotColor = 'b'
+            elif slope >= 0:
+                plotColor = 'r'
+                if slope != 1:
+                    print '+ve slope found: ', refScaffName, [refStart, refEnd], queryScaffName, [queryStart, queryEnd]
+            else:
+                print '-ve slope found: ', refScaffName, [refStart, refEnd], queryScaffName, [queryStart, queryEnd]
+                plotColor = 'g'
+
+            plot([refStart, refEnd], [queryStart, queryEnd], color = plotColor)
 
 
     ymin, ymax = ylim()   # return the current ylim
     ylim(-1, ymax)
-    savefig(os.path.join(plotFileDir + plotFileName + '.png'))
+    #needed 'ps' format to run on strongbad
+    savefig(os.path.join(plotFileDir + plotFileName + '.ps'), format='ps')
 
     
 #return reference and query coordinates range from o/p file
