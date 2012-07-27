@@ -86,10 +86,10 @@ def plotAlignment(alignmentIpFileName, refCoords, queryCoords):
                 plotColor = 'b'
             elif slope >= 0:
                 plotColor = 'r'
-                if slope != 1:
-                    print '+ve slope found: ', refScaffName, [refStart, refEnd], queryScaffName, [queryStart, queryEnd]
+                #if slope != 1:
+                #    print '+ve slope found: ', refScaffName, [refStart, refEnd], queryScaffName, [queryStart, queryEnd]
             else:
-                print '-ve slope found: ', refScaffName, [refStart, refEnd], queryScaffName, [queryStart, queryEnd]
+                #print '-ve slope found: ', refScaffName, [refStart, refEnd], queryScaffName, [queryStart, queryEnd]
                 plotColor = 'g'
 
             plot([refStart, refEnd], [queryStart, queryEnd], color = plotColor)
