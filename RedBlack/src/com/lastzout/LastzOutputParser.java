@@ -191,6 +191,12 @@ public class LastzOutputParser {
 		return str;
 	}
 	
+	
+	public boolean isCompletelyCovered(int start, int end, int minMatchLen) {
+		return intervalTree.isRegionFullyCovered(new IntervalNode(start, end), 
+													minMatchLen);
+	}
+	
 	public int getIntervalNonCoverage(int start, int end) {
 		int unMatchedLen = intervalTree.getIntervalNotCovered(
 											new IntervalNode(start, end));
