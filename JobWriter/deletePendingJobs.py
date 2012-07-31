@@ -2,27 +2,46 @@ import sys
 import os
 
 
+class ScaffConsts:
+    #fasta extension
+    FASTA_EXT = 'fasta'
+
+    #lock extension
+    FASTA_LOCK = 'lock'
+
+    #out extension
+    FASTA_OUT = 'out'
+    
+    
 def findPendingLocks(lockDir, outDir = None):
     dirContents = os.listdir(lockDir)
     completedJobs = {}
     for fileName in dirContents:
-        if fileName.endswith('.out'):
-            completedJobs[fileName.rstrip('.out')] = 1
+        if fileName.endswith('.' + ScaffConsts.FASTA_OUT):
+            completedJobs[fileName.rstrip('.' + ScaffConsts.FASTA_OUT)] = 1
+
     #remove ".lock" files not in completed jobs
     for fileName in dirContents:
-        if fileName.endswith('.lock') and\
-                fileName.rstrip('.lock') not in completedJobs:
+        if fileName.endswith('.' + ScaffConsts.FASTA_LOCK) and\
+                fileName.rstrip('.' + ScaffConsts.FASTA_LOCK) not in completedJobs:
             #found a pending job and remove it
             os.remove(os.path.join(lockDir, fileName))
-            if outDir is not None:
-                #remove partial output file too
-                os.remove(os.path.join(outDir,\
-                                       fileName.rstrip('.lock') + '.out'))
+
+    #remove contents in outDir
+    dirContents = os.listdir(outDir)
+    for fileName in dirContents:
+        if fileName.endswith('.' + ScaffConsts.FASTA_OUT):
+            filePrefix = fileName.rstrip('.' + ScaffConsts.FASTA_OUT)
+            if filePrefix not in completedJobs:
+                #found a partial output remove it
+                os.remove(os.path.join(outDir, fileName))
+            
     return completedJobs.keys()
             
             
 
 def findIntSuffix(scaffName):
+    scaffName = scaffName.rstrip('.' + ScaffConsts.FASTA_EXT)
     digitFound = False
     for i in range(len(scaffName)):
         if scaffName[i].isdigit():
