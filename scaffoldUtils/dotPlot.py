@@ -54,8 +54,8 @@ def plotAlignment(alignmentIpFileName, refCoords, queryCoords):
     #initialize py plot for non interactive backend
     matplotlib.use('Agg')
 
-    #needed following to run on strong bad
     #indicate to pyplot that we have new figure
+    #needed to comment following to run on strong bad
     #figure()
 
     with open(alignmentIpFileName, 'r') as alignIpFile:
