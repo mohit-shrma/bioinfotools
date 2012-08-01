@@ -78,7 +78,7 @@ def getHits(mummerOpFileName, minMatchLen):
     return hits
     
     
-def plotNonDiagHitDist(mummerOpFileName, minMatchLen):
+def plotNonDiagHitDist(mummerOpFileName, minMatchLen, intervalLen):
 
     #get the file name for plot
     plotFileName = os.path.basename(mummerOpFileName).split('.')[0]
@@ -98,7 +98,7 @@ def plotNonDiagHitDist(mummerOpFileName, minMatchLen):
     #construct bins based on hit length strength
     #list contain each bin min value, max value given by next 1 less than
     #next in the list
-    binLabels = range(0, HitDistConsts.MAX_BIN_MINLEN, 10000)
+    binLabels = range(0, HitDistConsts.MAX_BIN_MINLEN, intervalLen)
     binCount = [0 for i in binLabels]
 
     currBinInd = 0
@@ -109,13 +109,24 @@ def plotNonDiagHitDist(mummerOpFileName, minMatchLen):
             currBinInd += 1
         binCount[currBinInd] += 1
 
+    #start trimming bins from end till not empty
+    for i in range(len(binCount)-1, -1, -1):
+        if binCount[i] != 0:
+            break
+    if i != len(binCount) -1:
+        binCount = binCount[0:i+2]
+        binLabels = binLabels[0:i+2]
+    
+    binShortLabels = [label/1000 for label in binLabels]
+
     #plot bar graph of hitcount with hit labels
     xLocations = na.array(range(len(binLabels)))
     width = 0.5
     bar(xLocations, binCount,  width=width)
         
     #yticks(range(0, 8))
-    xticks(xLocations, binLabels)
+
+    xticks(xLocations, binShortLabels)
     xlim(0, xLocations[-1]+width*2)
     title("hit count distribution")
     gca().get_xaxis().tick_bottom()
@@ -129,10 +140,11 @@ def plotNonDiagHitDist(mummerOpFileName, minMatchLen):
                 
 def main():
     argLen = len(sys.argv)
-    if argLen >= 3:
+    if argLen >= 4:
         alignmentOpFileName = sys.argv[1]
         minMatchLen = int(sys.argv[2])
-        plotNonDiagHitDist(alignmentOpFileName, minMatchLen)
+        intervalLen = int(sys.argv[3])
+        plotNonDiagHitDist(alignmentOpFileName, minMatchLen, intervalLen)
     else:
         print 'err: files missin'
         
