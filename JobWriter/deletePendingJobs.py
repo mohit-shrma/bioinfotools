@@ -46,6 +46,7 @@ def findIntSuffix(scaffName):
     for i in range(len(scaffName)):
         if scaffName[i].isdigit():
             digitFound = True
+            break
     #return integer suffix starting at index 'i'
     if digitFound:
         return int(scaffName[i:])
@@ -59,7 +60,8 @@ def findMissingSeqFiles(filesList):
     missingSeq = []
     numSuffs = map(findIntSuffix, filesList)
     numSuffs.sort()
-    prevNum = numSuffs[0]
+    #prevNum = numSuffs[0]
+    prevNum = 0
     for num in numSuffs[1:]:
         if num != prevNum + 1:
             #print all num in between prevNum and num
