@@ -72,13 +72,14 @@ def findMissingSeqFiles(filesList):
             
             
 def main():
-
     if len(sys.argv) >= 3:
         lockDir = os.path.abspath(sys.argv[1])
         outDir = os.path.abspath(sys.argv[2])
         completedJobs = findPendingLocks(lockDir, outDir)
         missingJobs = findMissingSeqFiles(completedJobs)
-        print 'missing: ', missingJobs
+        print 'Missing jobs as follow: '
+        for missingJob in missingJobs:
+            print missingJob
     else:
         print 'err: files missing'
 
