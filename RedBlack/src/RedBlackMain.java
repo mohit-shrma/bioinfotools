@@ -5,14 +5,26 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 
 import au.com.bytecode.opencsv.CSVReader;
 
+import com.beust.jcommander.JCommander;
 import com.interval.IntervalNode;
 import com.interval.IntervalTree;
 import com.lastzout.LastzOutputParser;
 import com.redblack.*;
+
+
+
+/*
+ * -lastzOutDir /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut  
+ * -output /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut/NCGRRefRelaxStats75K.txt  
+ * -minMatchLen 75000
+ */
 
 class RedBlackMain {
 	
@@ -22,8 +34,12 @@ class RedBlackMain {
 	private static final int GENE_MAP_SCAFFID_COL = 1;
 	private static final int GENE_MAP_START_COL = 4;
 	private static final int GENE_MAP_END_COL = 5;
+	private static final int GENE_MAP_TYPE_COL = 2;
+	private static final int GENE_MAP_FEAT_SYMB_COL = 6;
+	
 	private static final String SCAFF_EXT= "fasta";
 	private static final String OUT_EXT= "out";
+	
 	private static final int LASTZ_START_COL = 4;
 	private static final int LASTZ_END_COL = 5;
 	private static final int LASTZ_QNAME_COL = 6;
@@ -90,6 +106,7 @@ class RedBlackMain {
 	
 	public void processFile(String fileName) {
 		LastzOutputParser lastzOutputParser = new LastzOutputParser(fileName,
+																0,
 																LASTZ_START_COL, 
 																LASTZ_END_COL, 
 																LASTZ_QNAME_COL, 
@@ -107,14 +124,22 @@ class RedBlackMain {
 	}
 	
 	
-	public HashMap<String, Integer> countGeneMappings(String dirName, 
-														String geneMapFileName,
-														String outputFileName) {
+	
+	public void countGeneMappings(String dirName, 
+									String geneMapFileName,
+									String outputFileName,
+									int minMatchLen) {
 		
 		File dir = new File(dirName);
 		LastzOutputParser lastzOutputParser = null;
-		HashMap<String, Integer> scaffUnMatchedCount = 
-												new HashMap<String, Integer>();
+		
+		HashMap<String, Boolean> geneCovered = new HashMap<String, Boolean>();
+		HashSet<String> geneLost = new HashSet<String>();
+		HashSet<String> allGeneSymbol = new HashSet<String>();
+		
+		int geneSymbolsCoveredCount = 0;
+		int geneSymbolsNotCoveredCount = 0;
+		
 		try {
 			CSVReader geneMapReader = new CSVReader(
 										new FileReader(geneMapFileName), '\t');
@@ -126,72 +151,111 @@ class RedBlackMain {
 			String newScaffName = "";
 			int geneStart = -1;
 			int geneEnd = -1;
+			boolean isGeneCovered = false;
+			String geneType = "";
+			String geneSymbol = "";
 			String scaffFileName = "";
 			File scaffOutFile = null;
-			int unMatchedLen = 0;
-			int totalLen = 0;
-			FileOutputStream fos = new FileOutputStream(outputFileName);;
-			BufferedOutputStream bos = new BufferedOutputStream(fos);
-			bos.write(("ScaffName\tUnMatchedLen\tTotalGeneLen\tPcNotFound\n").getBytes());
+			
 			while ((line = geneMapReader.readNext()) != null 
 						&& line.length > 1) {
+				
 				newScaffName = line[GENE_MAP_SCAFFID_COL];
 				geneStart = Integer.parseInt(line[GENE_MAP_START_COL]);
 				geneEnd = Integer.parseInt(line[GENE_MAP_END_COL]);
+				geneType = line[GENE_MAP_TYPE_COL];
+				geneSymbol = line[GENE_MAP_FEAT_SYMB_COL];
+				
+				allGeneSymbol.add(geneSymbol);
 				
 				if (!newScaffName.equalsIgnoreCase(currScaffName)) {
 					//got a new scaffold, read the scaffold outputfile
 					//from directory
-					if (currScaffName.length() > 0) {
-						scaffUnMatchedCount.put(currScaffName, unMatchedLen);
-						bos.write((currScaffName + '\t' + 
-									unMatchedLen + '\t' 
-									+ totalLen + '\t' 
-									+ (((float)unMatchedLen)/totalLen)*100  
-									+ '\n').getBytes());
-					}
 					lastzOutputParser = null;
-					//init to -1 to indicate case where file don't exists
-					unMatchedLen = -1;
-					totalLen = 0;
-					
-					
 					scaffFileName = dir.getCanonicalPath() + File.separatorChar
 									+ newScaffName + "." + SCAFF_EXT + "." 
 									+ OUT_EXT;
 					scaffOutFile = new File(scaffFileName);
-					
 					if (scaffOutFile.exists()) {
 						lastzOutputParser = new LastzOutputParser(
 								scaffOutFile.getCanonicalPath(),
+								0,
 								LASTZ_START_COL, 
 								LASTZ_END_COL, 
 								LASTZ_QNAME_COL, 
 								LASTZ_SIZE_COL);
 						lastzOutputParser.parse();
-						unMatchedLen = 0;
-					} 
+					} else {
+						geneLost.add(geneSymbol);
+						continue;
+					}
+					
 					currScaffName = newScaffName;
 				} else {
 					//same scaffold as previous, no need to read scaffold file 
 					//from dir
 				}
+				
+				
 				//check for the conflict of interval [start, end] in current
 				//scaffold interval tree
 				if (null != lastzOutputParser) {
-					unMatchedLen += lastzOutputParser.getIntervalNonCoverage(
-														geneStart, geneEnd);
+					isGeneCovered = lastzOutputParser
+										.isCompletelyCovered(geneStart, 
+															geneEnd, 
+															minMatchLen);
+					
+					if (!geneCovered.containsKey(geneSymbol) || 
+							geneCovered.get(geneSymbol)) {
+						geneCovered.put(geneSymbol, isGeneCovered);
+					}
 				}
-				totalLen += geneEnd - geneStart + 1;
+				
 			}
 			
-			bos.write((currScaffName + '\t' + unMatchedLen + '\t' 
-						+ totalLen + '\t' 
-						+ (((float)unMatchedLen)/totalLen)*100 
-						+ '\n').getBytes());
+			System.out.println("Total gene symbols: " + allGeneSymbol.size());
+			
+			System.out.println("Total gene symbols in scaffs: " + geneCovered.size());
+			System.out.println("Lost gene in scaffs: " + geneLost.size());
+			
+			
+			//Set<String> difference = new HashSet<String>(geneCovered.keySet());
+			geneCovered.keySet().removeAll(geneLost);
+			
+			System.out.println("Total gene symbols covered in scaffs: " + geneCovered.size());
+			System.out.println("Lost gene in scaffs: " + geneLost.size());
+			
+			
+			FileOutputStream fos = new FileOutputStream(outputFileName);;
+			BufferedOutputStream bos = new BufferedOutputStream(fos);
+			bos.write(("GeneType\tGeneFeatureSymbol\n").getBytes());
+			
+			FileOutputStream fos2 = new FileOutputStream(outputFileName 
+																	+ "NonCov");
+			BufferedOutputStream bos2 = new BufferedOutputStream(fos2);
+			bos2.write(("GeneType\tGeneFeatureSymbol\n").getBytes());
+			
+			//parse the hash map gene covered and print only those who are true
+			for (Map.Entry<String, Boolean> entry : geneCovered.entrySet()) {
+			    String geneSymbolKey = entry.getKey();
+			    Boolean isGeneSymCovered = entry.getValue();
+			    if (isGeneSymCovered) {
+			    	bos.write((geneType + '\t' +geneSymbolKey + '\n').getBytes());
+			    	geneSymbolsCoveredCount++;
+			    } else {
+			    	bos2.write((geneType + '\t' +geneSymbolKey + '\n').getBytes());
+			    	geneSymbolsNotCoveredCount++;
+			    }
+			}
+			
+			System.out.println("geneSymbolsCoveredCount: " 
+								+ geneSymbolsCoveredCount);
+			
+			System.out.println("geneSymbolsNotCoveredCount: " 
+								+ geneSymbolsNotCoveredCount);	
 			
 			bos.flush();
-			
+
 			if (bos != null) {
 				try {
 					bos.close();
@@ -210,6 +274,26 @@ class RedBlackMain {
 				}
 			}
 			
+			bos2.flush();
+
+			if (bos2 != null) {
+				try {
+					bos2.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			if (fos2 != null) {
+				try {
+					fos2.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
 			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -217,10 +301,10 @@ class RedBlackMain {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return scaffUnMatchedCount;
 	}
 	
-	public void processDir(String dirname, String outputFileName) {
+	public void processDir(String dirname, String outputFileName, 
+							int minMatchLen) {
 		
 		File dir = new File(dirname);
 		File[] files = dir.listFiles();
@@ -256,7 +340,11 @@ class RedBlackMain {
 			if (file.getAbsolutePath().endsWith("fasta.out")) {
 				try {
 					lastzOutputParser = new LastzOutputParser(file.getCanonicalPath(),
-																4, 5, 6, 3	);
+																minMatchLen, 
+																LASTZ_START_COL, 
+																LASTZ_END_COL, 
+																LASTZ_QNAME_COL, 
+																LASTZ_SIZE_COL);
 					lastzOutputParser.parse();
 					
 					tempName = file.getName().substring(0, 8);
@@ -317,62 +405,37 @@ class RedBlackMain {
 	public static void main(String[] args) {
 		
 		RedBlackMain obj = new RedBlackMain();
-		
-		/*int sampl[] = {1, 2, 3, 4, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19};
-		
-		for (int i = 0; i < sampl.length; i++) {
-			obj.insertNewRBNode(sampl[i]);
-		}*/
-		
-		//print inorder traversal
-		//obj.rbInorder();
-		//System.out.println("*********************");
-		//obj.rbLevelOrder();
-		
-		//interval ops
-		/*obj.insertNewIntvNode(1, 5);
-		obj.insertNewIntvNode(8, 15);
-		obj.insertNewIntvNode(16, 18);
-		obj.insertNewIntvNode(16, 29);
-		obj.insertNewIntvNode(22, 28);
-		obj.insertNewIntvNode(27, 32);
-		obj.insertNewIntvNode(36, 39);
-		obj.insertNewIntvNode(39, 49);
-		System.out.println("**********interval inorder***********");
-		obj.intervalInorder();
-		System.out.println("**********interval levelorder***********");
-		obj.intervalLevelOrder();
-		System.out.println("**********query overlap*************");
-		obj.queryOverlapInterval(21, 23);
-		System.out.println("**********merged walk **********");
-		obj.printMergedWalk();
-		System.out.println("*********gap counts************");
-		obj.countGaps(0, 52);*/
-		
-		System.out.println("******** processfiles ***********");		
-		
 		String dirName = "";
 		String opFileName = "";
 		String geneMapFileName = "";
-		
-		//parse commandline arguments
-		if (args.length == 2) {
-			dirName = args[0];
-			opFileName = args[1];
-			obj.processDir(dirName, opFileName);
-		} else if (args.length == 3) {
-			dirName = args[0];
-			geneMapFileName = args[1];
-			opFileName = args[2];
-			obj.countGeneMappings(dirName, geneMapFileName, opFileName);
-		} else {
-			//not sufficient argument passed
-			System.out.println("missing either input directory or output file");
-		}
+		int minMatchLen = -1;
 
-		//obj.processDir("/Users/mohit/Documents/spring12/hugroup/koronis/2012Apr9500RefBGIQueryNCGR/", 
-		//				"/Users/mohit/Documents/spring12/hugroup/bgicompstats/bgiRefNCGRQuery.txt");
+		if (args.length < 1) {
+			System.out.println("this program takes commandline arguments");
+		}
 		
+		RBArgs  rbArgs = new RBArgs();
+		new JCommander(rbArgs, args);
+
+		dirName = rbArgs.lastzOutDir;
+		opFileName = rbArgs.output;
+		minMatchLen = rbArgs.minMatchLen.intValue();
+		
+		if (!rbArgs.geneCoverage) {
+			/*
+			 * takes dir containining all lastz outputs, filename to putput the results to
+			 */
+			obj.processDir(dirName, opFileName, minMatchLen);
+		} else {
+			/*takes dir containing all fasta.outs(lastz o/p), gene annotation file,
+			 * filename to output to 
+			 * /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut  
+			 * /Users/mohit/Documents/hugroup/koronis/NCGRGeneMap.txt  
+			 * /Users/mohit/Documents/hugroup/koronis/geneMapOut.txt
+			 */
+			geneMapFileName = rbArgs.geneMapFile;
+			obj.countGeneMappings(dirName, geneMapFileName, opFileName, minMatchLen);
+		}
 	}
 	
 }

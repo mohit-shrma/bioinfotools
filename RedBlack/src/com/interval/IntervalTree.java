@@ -164,6 +164,33 @@ public class IntervalTree extends RedBlackTree {
 		return x;
 	}
 	
+	
+	
+	public boolean isRegionFullyCovered(IntervalNode query,  int minMatchLen) {
+		RedBlackNode searchRes = intervalSearch(query, getRoot());
+		if (searchRes != getLeaf()) {
+			//check if partially covered or fully covered
+			if (query.getLow() >= ((IntervalNode)searchRes).getLow() 
+					&& query.getHigh() <= ((IntervalNode)searchRes).getHigh()) {
+				//fully covered
+				if ((((IntervalNode)searchRes).getHigh() - 
+						((IntervalNode)searchRes).getLow() + 1) >= minMatchLen) {
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				//partially covered 
+				return false;
+			}
+		} else {
+			//no res found, completely uncovered
+			return false;
+		}
+	}
+	
+	
+	
 	public int getRegionLenNotCovered(IntervalNode query, 
 										RedBlackNode subTreeRoot) {
 		int unMatchedLen = 0;
