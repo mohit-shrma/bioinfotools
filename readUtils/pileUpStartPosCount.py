@@ -62,7 +62,10 @@ def countReadsAtEachPosition(pileUpFileName):
                     lastStart = False
                     
             print position + '\t' + '\t' + numReads + '\t' +str(startCount) \
-                + '\t' + str(endCount) + '\n'
+                + '\t' + str(endCount)
+            
+
+            
             
                     
                     
