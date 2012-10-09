@@ -1,7 +1,7 @@
 #! /usr/local/bin/perl
 
 #this script pull out unique reads and repeated reads, with their counts
-
+#to execute: perl pull_Unique_reads.pl SRR329954_1.sam  uniqXyz.sam infoSam.txt
 
 open fil, "<", $ARGV[0];     #open fil, "<","SRR329954_1.sam";
 open uniqFile, ">", $ARGV[1];    #open uniqFile, ">","SRR329954_1_Unique.sam";
