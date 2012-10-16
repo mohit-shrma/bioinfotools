@@ -4,7 +4,7 @@ import os
 class SAMConsts:
 
     #position col
-    POSITION_COL = 2
+    POSITION_COL = 1
     
     #number of reads col
     NUM_READS_COL = 3
@@ -26,7 +26,7 @@ def countReadsAtEachPosition(pileUpFileName):
 
     with open(pileUpFileName, 'r') as pileUpFile:
 
-        print 'Position\tStart Count\tEnd Count\n' 
+        print 'Position\tReadsCount\tStartCount\tEndCount\n' 
 
         for line in pileUpFile:
 
@@ -38,6 +38,9 @@ def countReadsAtEachPosition(pileUpFileName):
             #reads aligned style on this position
             alignReadsStyle = cols[SAMConsts.ALIGN_POS_STYLE_COL]
 
+            #num reads
+            numReads = cols[SAMConsts.NUM_READS_COL]
+            
             #count of reads aligned with their start and end
             startCount = 0
             endCount = 0
@@ -45,20 +48,24 @@ def countReadsAtEachPosition(pileUpFileName):
             lastStart = False
 
             for readStyle in alignReadsStyle:
-                if alignReadsStyle[readStyle] == SAMConsts.START_STYLE_FIRST:
+                if readStyle == SAMConsts.START_STYLE_FIRST:
                     #found beginning character of start
                     lastStart = True
                 elif lastStart and \
-                        alignReadsStyle[readStyle] == SAMConsts.START_STYLE_SECOND:
+                        readStyle == SAMConsts.START_STYLE_SECOND:
                     startCount += 1
                     lastStart = False
-                elif alignReadsStyle[readStyle] == SAMConsts.END_STYLE:
+                elif readStyle == SAMConsts.END_STYLE:
                     endCount += 1
                     lastStart = False
                 else:
                     lastStart = False
                     
-            print position + '\t' + str(startCount) + '\t' + endCount + '\n'
+            print position + '\t' + '\t' + numReads + '\t' +str(startCount) \
+                + '\t' + str(endCount)
+            
+
+            
             
                     
                     
