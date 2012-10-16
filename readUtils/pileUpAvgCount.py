@@ -39,6 +39,23 @@ def plotAverage(movingAverages, plotFileName):
     ylim(-1, ymax)
     
     savefig((plotFileName + '.png'))
+
+
+def writeAverageToFile(movingAverages, opAvgFileName):
+    with open(opAvgFileName, 'w') as opAvgFile:
+        for avg in movingAverages:
+            opAvgFile.write(str(avg) + '\n')
+
+            
+
+def readAverageFromFile(ipAverageFileName):
+    movingAverages = [] 
+    with open(ipAverageFileName, 'r') as ipAvgFile:
+        for avg in ipAvgFile:
+            movingAverages.append(int(avg))
+    return movingAverages
+
+
     
 #get the pileups moving average over specified window and a step size
 def getAverageWindowPileup(pileupFileName, windowSize, stepSize):
@@ -77,8 +94,14 @@ def main():
         plotFileName = sys.argv[4]
         #compute moving averages
         movingAverages = getAverageWindowPileup(pileupFileName, windowSize, stepSize)
+        print movingAverages
         #plot the moving averages
-        plotAverage(movingAverages, plotFileName)
+        #plotAverage(movingAverages, plotFileName)
+        #write the averages to a file
+        writeAverageToFile(movingAverages, plotFileName)
+        #read averages from file
+        movingAverages = readAverageFromFile(plotFileName)
+        print movingAverages
     else:
         print 'err: less num of args passed'
 
