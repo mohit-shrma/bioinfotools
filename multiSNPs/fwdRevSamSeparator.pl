@@ -55,9 +55,14 @@ while($record=<samFile>)
 	    $otherCount = $otherCount + 1;
         }
     }
-    else
+    elsif($record =~ /^@/) 
     {
-	print writ $record;
+	#we have found header write it to both separated files
+	print revSam $record;
+	print fwdSam $record;
+	
+    } else {
+	#record don't satify any of above conditions 
     }
 }
 
