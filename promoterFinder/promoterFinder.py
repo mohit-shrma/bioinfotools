@@ -4,7 +4,7 @@ import sys
 """ this class contains the column number"""
 class PredictionFileConsts:
     #scaffold name col
-    SCAFF_NAME_COL=0
+    SCAFF_NAME_COL = 0
 
     #start col
     SCAFF_START_COL = 3
@@ -12,8 +12,14 @@ class PredictionFileConsts:
     #end col
     SCAFF_END_COL = 4
 
-    #feature column
-    FEATURE_COL = 6
+    #feature type column
+    FEATURE_TYPE_COL = 1
+
+    #feature symbol column
+    FEATURE_SYMBOL_COL = 5
+    
+    #feature detals column
+    FEATURE_DETAILS_COL = 6
 
     #promoter length
     PROM_LENGTH = 3000
@@ -42,7 +48,12 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #get start and end indices, "-1" as these starts from 1,
                     #and python index starts from 0
                     start = int(cols[PredictionFileConsts.SCAFF_START_COL]) - 1
-                    feature = cols[PredictionFileConsts.FEATURE_COL]
+                    featureDetails = cols[PredictionFileConsts.FEATURE_DETAILS_COL]
+                    featureType = cols[PredictionFileConsts.FEATURE_TYPE_COL]
+                    featureSymbol = cols[PredictionFileConsts.FEATURE_SYMBOL_COL]
+                    #only look for predicted feature type
+                    if not featureType.startswith('Predicted'):
+                        continue
                     if currScaffName != scaffName:
                         #current scaffold bases  is not
                         #equal to require scaffold by predictor
@@ -69,17 +80,26 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #promoter bases are [promoterStart to promoterEnd] of
                     #current scaff#including start and end indices
                     promoterBases = currScaffBases[promoterStart:promoterEnd+1]
+
+                    if len(promoterBases) == 0:
+                        #don't write empty promoter bases
+                        continue
+                    
                     #write header
-                    currPromHeader = '>P' + str(promoterCount) + '_' + scaffName\
-                                       + '_' + feature
-                    promoterOutFile.write(currPromHeader + '\n')
+                    currPromHeader = '>P' + str(promoterCount)
+                    promoterOutFile.write(currPromHeader + '_'\
+                                              + scaffName + '\n')
                     #write promoter bases
                     promoterOutFile.write(promoterBases+'\n')
 
                     #write promoter information along with promoter header
                     #in promoter file
-                    promoterTabFile.write(line.rstrip('\n') + '\t' + \
-                                              currPromHeader + '\n')
+                    promoterTabFile.write(currPromHeader + '\t'\
+                                              + "Promoter Prediction" + '\t'\
+                                              + str(promoterStart) + '\t'\
+                                              + str(promoterEnd) + '\t'\
+                                              + featureSymbol + '\t'\
+                                              + featureDetails)
                     promoterCount += 1
                     
                     
