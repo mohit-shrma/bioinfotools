@@ -1,5 +1,7 @@
 import sys
 
+
+""" this class contains the column number"""
 class PredictionFileConsts:
     #scaffold name col
     SCAFF_NAME_COL=0
@@ -31,9 +33,11 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                 
                 currScaffName = ''
                 currScaffBases = ''
+                #read header from prediction file, it will be unused
+                header= predictionFile.readline()
                 for line in predictionFile:
                     #get the required data about current feature
-                    cols = line.rstrip('\n').split()
+                    cols = line.rstrip('\n').split('\t')
                     scaffName = cols[PredictionFileConsts.SCAFF_NAME_COL]
                     #get start and end indices, "-1" as these starts from 1,
                     #and python index starts from 0
@@ -66,7 +70,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #current scaff#including start and end indices
                     promoterBases = currScaffBases[promoterStart:promoterEnd+1]
                     #write header
-                    currPromHeader = '>P' + promoterCount + '_' + scaffName\
+                    currPromHeader = '>P' + str(promoterCount) + '_' + scaffName\
                                        + '_' + feature
                     promoterOutFile.write(currPromHeader + '\n')
                     #write promoter bases
@@ -83,11 +87,13 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
 """" get scaffold bases from the scaffolds file """                
 def getScaffBases(scaffName, allScaffoldFileName):
     with open(allScaffoldFileName, 'r') as allScaffFile:
+        foundScaff = False
         for line in allScaffFile:
             if line.startswith('>'+scaffName):
                 #got the desired scaffold
-                bases = allScaffFile.readline()
-                bases = bases.rstrip('\n')
+                foundScaff = True
+            elif foundScaff:
+                bases = line.rstrip('\n')
                 return bases
         print 'Error '+ scaffName + ' was not found'
         return ''
