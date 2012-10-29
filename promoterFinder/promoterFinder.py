@@ -99,7 +99,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                                               + str(promoterStart) + '\t'\
                                               + str(promoterEnd) + '\t'\
                                               + featureSymbol + '\t'\
-                                              + featureDetails)
+                                              + featureDetails + '\n')
                     promoterCount += 1
                     
                     
