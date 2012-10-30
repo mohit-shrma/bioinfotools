@@ -77,7 +77,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #end-2, end-1, end
                     endBases = currScaffBases[end-2:end+1]
 
-                    if startBases == 'atg':
+                    if startBases.lower() == 'atg':
                         #find the promoter start
                         promoterStart = start - PredictionFileConsts.PROM_LENGTH
                         if promoterStart < 0:
@@ -91,7 +91,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         if promoterEnd < 0:
                             promoterEnd = promoterStart
 
-                    elif endBases == 'cat':
+                    elif endBases.lower() == 'cat':
                         #find the promoter end
                         promoterEnd = end + PredictionFileConsts.PROM_LENGTH +1
                         if promoterEnd > len(currScaffBases) -1:
@@ -106,7 +106,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                             promoterStart = promoterEnd
                             
                     else:
-                        print 'promoter bases start and end mismatch'
+                        print 'promoter bases start and end mismatch:', startBases, endBases
                         continue
                     
                     #promoter bases are [promoterStart to promoterEnd] of
