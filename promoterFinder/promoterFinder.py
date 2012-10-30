@@ -36,7 +36,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
     with open(predictionFileName, 'r') as predictionFile:
         with open(promoterOutputFileName, 'w') as promoterOutFile:
             with open(promoterOutputFileName+'.tab', 'w') as promoterTabFile:
-                
+                skippedPromoterCount = 0
                 currScaffName = ''
                 currScaffBases = ''
                 #read header from prediction file, it will be unused
@@ -48,41 +48,74 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #get start and end indices, "-1" as these starts from 1,
                     #and python index starts from 0
                     start = int(cols[PredictionFileConsts.SCAFF_START_COL]) - 1
+                    end = int(cols[PredictionFileConsts.SCAFF_END_COL]) - 1
                     featureDetails = cols[PredictionFileConsts.FEATURE_DETAILS_COL]
                     featureType = cols[PredictionFileConsts.FEATURE_TYPE_COL]
                     featureSymbol = cols[PredictionFileConsts.FEATURE_SYMBOL_COL]
+
                     #only look for predicted feature type
-                    if not featureType.startswith('Predicted'):
-                        continue
+                    #if not featureType.startswith('Predicted'):
+                    #    continue
+
                     if currScaffName != scaffName:
                         #current scaffold bases  is not
                         #equal to require scaffold by predictor
                         currScaffBases = getScaffBases(scaffName, \
                                                            allScaffoldFileName)
-                        currScaffName = scaffName
                         if len(currScaffBases) == 0:
                             #desired scaffold not found
-                            break
-                
-                    #find the promoter start
-                    promoterStart = start - PredictionFileConsts.PROM_LENGTH
-                    if promoterStart < 0:
-                        if start > 0:
-                            promoterStart = 0
-                        else:
-                            promoterStart = -1
-                    
-                    #find the promoter end
-                    promoterEnd = start - 1
-                    if promoterEnd < 0:
-                        promoterEnd = promoterStart
+                            continue
+                        currScaffName = scaffName
+                        #flush the output files
+                        promoterOutFile.flush()
+                        promoterTabFile.flush()
 
+
+                    #find the current bases start and ending 3 bases
+                    #start, start+1, start+2
+                    startBases = currScaffBases[start:start+3]
+                    #end-2, end-1, end
+                    endBases = currScaffBases[end-2:end+1]
+
+                    if startBases == 'atg':
+                        #find the promoter start
+                        promoterStart = start - PredictionFileConsts.PROM_LENGTH
+                        if promoterStart < 0:
+                            if start > 0:
+                                promoterStart = 0
+                            else:
+                                promoterStart = -1
+                    
+                        #find the promoter end
+                        promoterEnd = start - 1
+                        if promoterEnd < 0:
+                            promoterEnd = promoterStart
+
+                    elif endBases == 'cat':
+                        #find the promoter end
+                        promoterEnd = end + PredictionFileConsts.PROM_LENGTH +1
+                        if promoterEnd > len(currScaffBases) -1:
+                            if end < len(currScaffBases) -1:
+                                promoterEnd = len(currScaffBases) -1 + 1
+                            else:
+                                promoterEnd = -1
+
+                        #find the promoter start
+                        promoterStart = end + 1
+                        if promoterStart > len(currScaffBases) -1:
+                            promoterStart = promoterEnd
+                            
+                    else:
+                        print 'promoter bases start and end mismatch'
+                        continue
+                    
                     #promoter bases are [promoterStart to promoterEnd] of
                     #current scaff#including start and end indices
                     promoterBases = currScaffBases[promoterStart:promoterEnd+1]
 
                     if len(promoterBases) == 0:
                         #don't write empty promoter bases
+                        skippedPromoterCount += 1 
                         continue
                     
                     #write header
@@ -96,14 +129,19 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #in promoter file
                     promoterTabFile.write(currPromHeader + '\t'\
                                               + "Promoter Prediction" + '\t'\
-                                              + str(promoterStart) + '\t'\
-                                              + str(promoterEnd) + '\t'\
+                                              + str(promoterStart+1) + '\t'\
+                                              + str(promoterEnd+1) + '\t'\
                                               + featureSymbol + '\t'\
                                               + featureDetails + '\n')
                     promoterCount += 1
                     
-                    
+                print 'skipped promoters: ', skippedPromoterCount
+                sys.stdout.flush()    
+                #flush the output files
+                promoterOutFile.flush()
+                promoterTabFile.flush()
 
+                
 """" get scaffold bases from the scaffolds file """                
 def getScaffBases(scaffName, allScaffoldFileName):
     with open(allScaffoldFileName, 'r') as allScaffFile:
@@ -116,6 +154,7 @@ def getScaffBases(scaffName, allScaffoldFileName):
                 bases = line.rstrip('\n')
                 return bases
         print 'Error '+ scaffName + ' was not found'
+        sys.stdout.flush()    
         return ''
         
     
