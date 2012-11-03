@@ -18,7 +18,6 @@ class PromoterFileConsts:
     #feature type column
     FEATURE_TYPE_COL = 1
 
-
     #note carefully to split on tab separated as normal spaces can be
     #inserted sometime in files
     #feature symbol column
@@ -171,15 +170,20 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                             elif minStart > promoterEnd:
                                 #dont trim promoter,
                                 #EST region to right of promoter
-                                print promoterScaffName, ' EST: ', minStart, end,\
+                                print promoterScaffName, ' EST: ', str(minStart+1), str(end+1),\
                                     ' to right of \'+\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd
+                                    promoterSymbol, str(promoterStart+1), str(promoterEnd+1)
+                                trimLength = 'N.A.'
                             else:
                                 #weird case, EST lies to left of promoter in '+' dir
-                                print promoterScaffName, 'EST: ', minStart, end,\
+                                print promoterScaffName, 'EST: ', str(minStart+1), str(end+1),\
                                     ' to left of \'+\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd
-                                     
+                                    promoterSymbol, str(promoterStart+1), str(promoterEnd+1)
+                                trimLength = 'N.A.'
+
+                            #if minStart == -1:
+                            #    trimLength = 'N.F.'
+
                         else:
                             #'CAT' case promoter after the sequence,
                             #take the max end
@@ -192,15 +196,16 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                                 trimLength = maxEnd - promoterStart + 1
                             elif maxEnd < promoterStart:
                                 #dont trim promoter,EST lies to left of promoter
-                                print promoterScaffName, 'EST: ', start, maxEnd,\
+                                print promoterScaffName, 'EST: ', str(start+1), str(maxEnd+1),\
                                     ' to left of \'-\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd
+                                    promoterSymbol, str(promoterStart+1), str(promoterEnd+1)
+                                trimLength = 'N.A.'
                             else:
                                 #weird case,EST lies to right of promoter in '-' dir
-                                print promoterScaffName, 'EST: ', start, maxEnd,\
+                                print promoterScaffName, 'EST: ', str(start+1), str(maxEnd+1),\
                                     ' to right of \'-\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd
-                                    
+                                    promoterSymbol, (promoterStart+1), str(promoterEnd+1)
+                                trimLength = 'N.A.'
                             
                 #write to trimmed promoter file
                 trimPromoterFile.write(promoterHeader + '\t'\
