@@ -32,7 +32,7 @@ efficient computation
 """
 def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                                   promoterOutputFileName):
-    promoterCount = 0
+    promoterCount = 1
     with open(predictionFileName, 'r') as predictionFile:
         with open(promoterOutputFileName, 'w') as promoterOutFile:
             with open(promoterOutputFileName+'.tab', 'w') as promoterTabFile:
@@ -77,6 +77,8 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #end-2, end-1, end
                     endBases = currScaffBases[end-2:end+1]
 
+                    direction  = ''
+                    
                     if startBases.lower() == 'atg':
                         #find the promoter start
                         promoterStart = start - PredictionFileConsts.PROM_LENGTH
@@ -90,7 +92,8 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         promoterEnd = start - 1
                         if promoterEnd < 0:
                             promoterEnd = promoterStart
-
+                        direction = '+'
+                        
                     elif endBases.lower() == 'cat':
                         #find the promoter end
                         promoterEnd = end + PredictionFileConsts.PROM_LENGTH +1
@@ -104,7 +107,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         promoterStart = end + 1
                         if promoterStart > len(currScaffBases) -1:
                             promoterStart = promoterEnd
-                            
+                        direction = '-'    
                     else:
                         print 'promoter bases start and end mismatch:', startBases, endBases
                         continue
@@ -120,8 +123,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     
                     #write header
                     currPromHeader = '>P' + str(promoterCount)
-                    promoterOutFile.write(currPromHeader + '_'\
-                                              + scaffName + '\n')
+                    promoterOutFile.write(currPromHeader + '\n')
                     #write promoter bases
                     promoterOutFile.write(promoterBases+'\n')
 
@@ -129,8 +131,10 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #in promoter file
                     promoterTabFile.write(currPromHeader + '\t'\
                                               + "Promoter Prediction" + '\t'\
+                                              + currScaffName + '\t'
                                               + str(promoterStart+1) + '\t'\
                                               + str(promoterEnd+1) + '\t'\
+                                              + direction +'\t'\
                                               + featureSymbol + '\t'\
                                               + featureDetails + '\n')
                     promoterCount += 1
