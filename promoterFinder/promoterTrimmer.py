@@ -173,12 +173,12 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                                 #EST region to right of promoter
                                 print promoterScaffName, ' EST: ', minStart, end,\
                                     ' to right of \'+\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd,\
+                                    promoterSymbol, promoterStart, promoterEnd
                             else:
                                 #weird case, EST lies to left of promoter in '+' dir
                                 print promoterScaffName, 'EST: ', minStart, end,\
                                     ' to left of \'+\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd,\
+                                    promoterSymbol, promoterStart, promoterEnd
                                      
                         else:
                             #'CAT' case promoter after the sequence,
@@ -194,13 +194,12 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                                 #dont trim promoter,EST lies to left of promoter
                                 print promoterScaffName, 'EST: ', start, maxEnd,\
                                     ' to left of \'-\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd,\
-                                 
+                                    promoterSymbol, promoterStart, promoterEnd
                             else:
                                 #weird case,EST lies to right of promoter in '-' dir
                                 print promoterScaffName, 'EST: ', start, maxEnd,\
                                     ' to right of \'-\' promoter: ', \
-                                    promoterSymbol, promoterStart, promoterEnd,\
+                                    promoterSymbol, promoterStart, promoterEnd
                                     
                             
                 #write to trimmed promoter file
