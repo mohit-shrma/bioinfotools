@@ -7,7 +7,7 @@ from bisect import *
 """ contains col number for promoter file"""
 class PromoterFileConsts:
     #scaffold name col
-    SCAFF_NAME_COL = 0
+    SCAFF_NAME_COL = 2
 
     #start col
     SCAFF_START_COL = 3
@@ -22,13 +22,10 @@ class PromoterFileConsts:
     #note carefully to split on tab separated as normal spaces can be
     #inserted sometime in files
     #feature symbol column
-    FEATURE_SYMBOL_COL = 5
+    FEATURE_SYMBOL_COL = 6
     
     #feature detals column
-    FEATURE_DETAILS_COL = 6
-
-    #promoter length
-    PROM_LENGTH = 3000
+    FEATURE_DETAILS_COL = 7
 
     #promoter direction
     PROM_DIR_COL = 5
@@ -152,35 +149,36 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                 if promoterSymbol in estSymbolsDict:
                     #get EST symbol details for this symbol
                     estSymbolDict = estSymbolsDict[promoterSymbol]
-                    #get minMaxTuples for current scaff
-                    minMaxTuples = estSymbolDict[promoterScaffName]
-                    trimLength = -786
-                    if promoterDirection == '+':
-                        #'ATG' case promoter before the sequence,
-                        #take the min start
-                        minStart = minMaxTuples[0][0]
-                        end = minMaxTuples[0][1]
-                        if promoterStart <= minStart:
-                            #trim promoter
-                            trimLength = promoterEnd - minStart + 1
+                    if promoterScaffName in estSymbolDict:
+                        #get minMaxTuples for current scaff
+                        minMaxTuples = estSymbolDict[promoterScaffName]
+                        trimLength = -786
+                        if promoterDirection == '+':
+                            #'ATG' case promoter before the sequence,
+                            #take the min start
+                            minStart = minMaxTuples[0][0]
+                            end = minMaxTuples[0][1]
+                            if promoterStart <= minStart:
+                                #trim promoter
+                                trimLength = promoterEnd - minStart + 1
+                            else:
+                                #weird case, EST lies to left of promoter in '+' dir
+                                print 'EST to left of \'+\' promoter:', \
+                                    promoterSymbol, promoterStart, promoterEnd,\
+                                    minStart, end  
                         else:
-                            #weird case, EST lies to left of promoter in '+' dir
-                            print 'EST to left of \'+\' promoter:', \
-                                promoterSymbol, promoterStart, promoterEnd,\
-                                minStart, end  
-                    else:
-                        #'CAT' case promoter after the sequence,
-                        #take the max end
-                        maxEnd = minMaxTuples[1][1]
-                        start = minMaxTuples[1][0]
-                        if maxEnd <= promoterEnd:
-                            #trim promoter
-                            trimLength = maxEnd - promoterStart + 1
-                        else:
-                            #weird case,EST lies to right of promoter in '-' dir
-                            print 'EST to right of \'-\' promoter:', \
-                                promoterSymbol, promoterStart, promoterEnd,\
-                                start, maxEnd
+                            #'CAT' case promoter after the sequence,
+                            #take the max end
+                            maxEnd = minMaxTuples[1][1]
+                            start = minMaxTuples[1][0]
+                            if maxEnd <= promoterEnd:
+                                #trim promoter
+                                trimLength = maxEnd - promoterStart + 1
+                            else:
+                                #weird case,EST lies to right of promoter in '-' dir
+                                print 'EST to right of \'-\' promoter:', \
+                                    promoterSymbol, promoterStart, promoterEnd,\
+                                    start, maxEnd
                             
                 #write to trimmed promoter file
                 trimPromoterFile.write(promoterHeader + '\t'\
@@ -189,7 +187,7 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                                            + str(promoterStart+1) + '\t'\
                                            + str(promoterEnd+1) + '\t'\
                                            + promoterDirection +'\t'\
-                                           + trimLength + '\t'\
+                                           + str(trimLength) + '\t'\
                                            + promoterSymbol + '\t'\
                                            + promoterDetails + '\n')
     
