@@ -53,6 +53,10 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     featureType = cols[PredictionFileConsts.FEATURE_TYPE_COL]
                     featureSymbol = cols[PredictionFileConsts.FEATURE_SYMBOL_COL]
 
+
+                    if featureSymbol == "N.A.":
+                        continue
+
                     #only look for predicted feature type
                     #if not featureType.startswith('Predicted'):
                     #    continue
@@ -83,6 +87,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         #find the promoter start
                         promoterStart = start - PredictionFileConsts.PROM_LENGTH
                         if promoterStart < 0:
+                            #got behind start of current of base
                             if start > 0:
                                 promoterStart = 0
                             else:
@@ -91,6 +96,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         #find the promoter end
                         promoterEnd = start - 1
                         if promoterEnd < 0:
+                            #end got behind start of current base
                             promoterEnd = promoterStart
                         direction = '+'
                         
@@ -98,8 +104,10 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         #find the promoter end
                         promoterEnd = end + PredictionFileConsts.PROM_LENGTH +1
                         if promoterEnd > len(currScaffBases) -1:
+                            #exceeded the length of current bases
                             if end < len(currScaffBases) -1:
-                                promoterEnd = len(currScaffBases) -1 + 1
+                                #in this case only last base is our promoter
+                                promoterEnd = len(currScaffBases) -1
                             else:
                                 promoterEnd = -1
 
@@ -130,7 +138,7 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                     #write promoter information along with promoter header
                     #in promoter file
                     promoterTabFile.write(currPromHeader + '\t'\
-                                              + "Promoter Prediction" + '\t'\
+                                              + "PromoterPrediction" + '\t'\
                                               + currScaffName + '\t'
                                               + str(promoterStart+1) + '\t'\
                                               + str(promoterEnd+1) + '\t'\

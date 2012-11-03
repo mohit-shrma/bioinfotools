@@ -61,7 +61,11 @@ def sortedPredGeneSymbols(promoterFileName):
         for line in promoterFile:
             cols = line.rstrip('\n').split('\t')
             featureSymbol = cols[PromoterFileConsts.FEATURE_SYMBOL_COL]
-            insort_left(geneSymbols, featureSymbol)
+            #Locate the leftmost value exactly equal to featureSymbol
+            i = bisect_left(geneSymbols, featureSymbol)
+            if i == len(geneSymbols) or geneSymbols[i] != featureSymbol:
+                #not found in sorted list, insert in sorted list
+                geneSymbols.insert(i, featureSymbol)
     return geneSymbols
             
 
@@ -117,7 +121,7 @@ def getESTSymbolsDict(predSymbols, estFileName):
                     estSymbolDict[scaffName] = minMaxTuples
                 else:
                     #scaffold not found in symbol
-                    #enter scaffold details in symbol dict
+                    #enter scaffold details in symbol dict, as minMax tuples
                     estSymbolDict[scaffName] = [(start, end), (start, end)]
                 #update symbols dict
                 symbolsDict[estSymbol] = estSymbolDict
@@ -158,31 +162,50 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                             #take the min start
                             minStart = minMaxTuples[0][0]
                             end = minMaxTuples[0][1]
-                            if promoterStart <= minStart:
-                                #trim promoter
+                            if promoterStart <= minStart\
+                                    and promoterEnd >= minStart:
+                                #trim promoter, if minStart lies in between
+                                #promoterStart and promoter end
+                                #i.e. EST overlaps
                                 trimLength = promoterEnd - minStart + 1
+                            elif minStart > promoterEnd:
+                                #dont trim promoter,
+                                #EST region to right of promoter
+                                print promoterScaffName, ' EST: ', minStart, end,\
+                                    ' to right of \'+\' promoter: ', \
+                                    promoterSymbol, promoterStart, promoterEnd,\
                             else:
                                 #weird case, EST lies to left of promoter in '+' dir
-                                print 'EST to left of \'+\' promoter:', \
+                                print promoterScaffName, 'EST: ', minStart, end,\
+                                    ' to left of \'+\' promoter: ', \
                                     promoterSymbol, promoterStart, promoterEnd,\
-                                    minStart, end  
+                                     
                         else:
                             #'CAT' case promoter after the sequence,
                             #take the max end
                             maxEnd = minMaxTuples[1][1]
                             start = minMaxTuples[1][0]
-                            if maxEnd <= promoterEnd:
-                                #trim promoter
+                            if maxEnd <= promoterEnd\
+                                    and maxEnd >= promoterStart:
+                                #trim promoter, maxEnd lies in between promoter
+                                #i.e. EST overlaps
                                 trimLength = maxEnd - promoterStart + 1
+                            elif maxEnd < promoterStart:
+                                #dont trim promoter,EST lies to left of promoter
+                                print promoterScaffName, 'EST: ', start, maxEnd,\
+                                    ' to left of \'-\' promoter: ', \
+                                    promoterSymbol, promoterStart, promoterEnd,\
+                                 
                             else:
                                 #weird case,EST lies to right of promoter in '-' dir
-                                print 'EST to right of \'-\' promoter:', \
+                                print promoterScaffName, 'EST: ', start, maxEnd,\
+                                    ' to right of \'-\' promoter: ', \
                                     promoterSymbol, promoterStart, promoterEnd,\
-                                    start, maxEnd
+                                    
                             
                 #write to trimmed promoter file
                 trimPromoterFile.write(promoterHeader + '\t'\
-                                           + "Promoter Prediction" + '\t'\
+                                           + "PromoterPrediction" + '\t'\
                                            + promoterScaffName + '\t'\
                                            + str(promoterStart+1) + '\t'\
                                            + str(promoterEnd+1) + '\t'\
