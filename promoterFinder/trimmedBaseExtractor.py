@@ -19,10 +19,10 @@ class PromoterTrimConsts:
     #note carefully to split on tab separated as normal spaces can be
     #inserted sometime in files
     #feature symbol column
-    FEATURE_SYMBOL_COL = 6
+    FEATURE_SYMBOL_COL = 7
     
     #feature detals column
-    FEATURE_DETAILS_COL = 7
+    FEATURE_DETAILS_COL = 8
 
     #promoter direction
     PROM_DIR_COL = 5
@@ -31,7 +31,7 @@ class PromoterTrimConsts:
     PROM_HEADER = 0
 
     #promoter trim length col
-    PROM_TRIM_LEN_COL = 7
+    PROM_TRIM_LEN_COL = 6
 
 """ from the trimmed promoter file name read the data and
 output trimmed promoter region with 100bp from trimmed region and
@@ -46,27 +46,32 @@ def getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                 currScaffName = ''
                 currScaffLen = -1
                 currScaffBases = ''
+                skippedCount = 0
+                scaffNotFound = 0
+                promoterSymNA = 0
                 for line in promoterStatsFile:
                     cols = line.rstrip('\n').split('\t')
                     #get promoter header
-                    #TODO: check col No. header for promoter in promoter bases file
                     promoterHeader = cols[PromoterTrimConsts.PROM_HEADER]
                     #get promoter details
                     promoterSymbol = cols[PromoterTrimConsts.FEATURE_SYMBOL_COL]
                     #get promoter direction
                     promoterDirection = cols[PromoterTrimConsts.PROM_DIR_COL]
                     #get promoter start
-                    promoterStart = int(cols[PromoterTrimConsts.SCAFF_START_COL])-1
+                    promoterStart = int(cols[PromoterTrimConsts.SCAFF_START_COL])
                     #get promoter end
-                    promoterEnd = int(cols[PromoterTrimConsts.SCAFF_END_COL])-1
+                    promoterEnd = int(cols[PromoterTrimConsts.SCAFF_END_COL])
                     #get scaff name
                     promoterScaffName = cols[PromoterTrimConsts.SCAFF_NAME_COL]
                     #get promoter trim length
                     promoterTrimLength = cols[PromoterTrimConsts.PROM_TRIM_LEN_COL]
                     #get promoter details
                     promoterDetails = cols[PromoterTrimConsts.FEATURE_DETAILS_COL]
-
+                    #get promoter type
+                    promoterType = cols[PromoterTrimConsts.FEATURE_TYPE_COL]
+                    
                     if promoterSymbol == "N.A.":
+                        promoterSymNA += 1
                         continue
 
                     if currScaffName != promoterScaffName:
@@ -76,14 +81,23 @@ def getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                                                            allScaffoldFileName)
                         if len(currScaffBases) <= 0:
                             #desired scaffold not found
+                            scaffNotFound += 1
                             continue
                         currScaffName = promoterScaffName
-                        #flush the output files
+                        currScaffLen = len(currScaffBases)
+                        
+                    if promoterTrimLength == "N.A.":
+                        promoterTrimLength = 0
+                    else:
+                        promoterTrimLength = int(promoterTrimLength)
 
-                    if promoterTrimLength <=0:
-                        #TODO?
+                    if promoterTrimLength < 0:
+                        skippedCount += 1
                         continue
-
+                    
+                    trimStart = -1
+                    trimEnd = -1
+                    
                     if promoterDirection == '+':
                         # 'atg'
                         #get the promotertrimmed position behind promoter End
@@ -120,35 +134,28 @@ def getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                     #get the trimmed bases from with in current scaffold
                     trimmedBases = currScaffBases[trimStart:trimEnd + 1]
 
-                    #header
-                    trimHeader = '>'+promoterHeader
-
-                    #write it out to promoter trim output file
-                    trimPromoterOutFile.write(trimHeader + '\n')
+                    #write header out to promoter trim output file
+                    trimPromoterOutFile.write(promoterHeader + '\n')
 
                     #write the promoter bases
                     trimPromoterOutFile.write(trimmedBases + '\n')
 
                     #write out trimmed promoter information
-                    trimPromoterTabFile.write(promoterScaffName + '\t'\
-                                                  + promoterHeader + '\t'\
-                                                  + promoterSymbol + '\t'\
-                                                  + promoterStart + '\t'\
-                                                  + promoterEnd + '\t'\
+                    trimPromoterTabFile.write(promoterHeader + '\t'\
+                                                  + promoterType + '\t'\
+                                                  + promoterScaffName + '\t'\
+                                                  + str(promoterStart + 1) + '\t'\
+                                                  + str(promoterEnd + 1) + '\t'\
                                                   + promoterDirection + '\t'\
-                                                  + promoterTrimLength + '\t'\
-                                                  + trimStart + '\t'\
-                                                  + trimEnd + '\n')
-                
-                    
-                    
-                        
-                        
-                    
-
+                                                  + str(promoterTrimLength) + '\t'\
+                                                  + promoterSymbol + '\t'\
+                                                  + str(trimStart + 1) + '\t'\
+                                                  + str(trimEnd + 1) + '\t'\
+                                                  + promoterDetails + '\n')
+    print 'skippedCount = ', skippedCount
+    print 'scaffNotFound = ', scaffNotFound
+    print 'promoterSymNA = ', promoterSymNA            
     
-                
-
     
                 
 """" get scaffold bases from the scaffolds file """                
@@ -176,6 +183,7 @@ def main():
         allScaffoldFileName = sys.argv[2]
         #get file name for new trimmed promoter output bases
         trimPromoterOutName = sys.argv[3]
+        #get the trimmed promoters region
         getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                                 trimPromoterOutName)
         
