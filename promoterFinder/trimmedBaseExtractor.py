@@ -95,9 +95,10 @@ def getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                         #get the 100 bases after trim pos including trim pos
                         trimEnd = promoterTrimPos + 99
                         if trimStart < 0:
+                            #going behind the scaffold start
                             trimStart = 0
                         if trimEnd >= promoterEnd - 1:
-                            #TODO: check whether exceeding promoter end is a problem
+                            #going beyond the promoter end
                             trimEnd = promoterEnd - 1
                     elif promoterDirection == '-':
                         # 'cat'
@@ -110,9 +111,10 @@ def getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                         #get the 1900 bases after 'promoterTrimPos' 
                         trimEnd = promoterTrimPos + 1900
                         if trimStart < promoterStart - 1:
+                            #going behind promoter start region
                             trimStart = promoterStart - 1
                         if trimEnd > currScaffLen - 1:
-                            #TODO: similar check as above
+                            #going beyond the scaffold length
                             trimEnd = currScaffLen - 1
 
                     #get the trimmed bases from with in current scaffold
