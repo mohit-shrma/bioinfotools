@@ -144,8 +144,8 @@ def getTrimmedPromoters(promoterFileName, allScaffoldFileName,\
                     trimPromoterTabFile.write(promoterHeader + '\t'\
                                                   + promoterType + '\t'\
                                                   + promoterScaffName + '\t'\
-                                                  + str(promoterStart + 1) + '\t'\
-                                                  + str(promoterEnd + 1) + '\t'\
+                                                  + str(promoterStart) + '\t'\
+                                                  + str(promoterEnd) + '\t'\
                                                   + promoterDirection + '\t'\
                                                   + str(promoterTrimLength) + '\t'\
                                                   + promoterSymbol + '\t'\
