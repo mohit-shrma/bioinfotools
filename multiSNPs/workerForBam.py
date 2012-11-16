@@ -31,7 +31,7 @@ def getToolsDict():
     tools['PICARD_TOOLS'] ="/home/koronis/mohit/programs/picard-tools-1.68"
     tools['GENOME_ANALYSIS_TK_JAR'] = "/home/koronis/mohit/programs/GenomeAnalysisTK/GenomeAnalysisTK.jar"
     tools['VARSCAN_JAR'] = "/home/koronis/mohit/programs/varscan/VarScan.v2.2.10.jar"
-    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 12 /home/koronis/mohit/programs/Drone/Drone "
+    tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 24 /home/koronis/mohit/programs/Drone/Drone "
     return tools
 
 #a dictionary of all possible extensions
@@ -117,10 +117,10 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     extensions = getExtDict()
     
     #fastq file name
-    fastQFileName = (fastQFilePath.split('/')[-1]).split('.')[0]
+    fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
 
     #fasta file name
-    fastaFileName = (fastaFilePath.split('/')[-1]).split('.')[0]
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
 
     #fasta dir
     fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
@@ -171,6 +171,7 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
                        + " " + fastQFileName + extensions['SAI_EXT']\
                        + " " + fastQFilePath + " >" \
                        + " " + fastQFileName + extensions['SAM_EXT'] + "; ")
+    
 
     #convert to unique sam with info
     jobsFile.write("perl "+ tools['UNIQUESAMPL']\
@@ -242,13 +243,4 @@ def workerToGenBAM(readLibraryPath, outDir, lockDirPath, fastaPath):
         print "I/O error({0}): {1}".format(errno, strerror)        
         return -1
 
-    #execute the wrote jobs through DRONE parallely
-    
-    """print "call drone", outDir + fastQJobsFileName
-    retCode = callParallelDrone(outDir + fastQJobsFileName,\
-                                    tools['PARALLEL_DRONE'])
-    if retCode != 0:
-        #error occured while calling parallel drone
-        print "parallel drone erred"
-        return -1"""
     return 1
