@@ -43,10 +43,12 @@ def getExtDict():
     extensions['FASTQ_EXT'] = ".fastq"
     extensions['SAI_EXT'] = ".sai"
     extensions['SAM_EXT'] = ".sam"
+    extensions['BAM_EXT'] = ".bam"
+    extensions['SORT_BAM_EXT'] = ".sorted"
     extensions['UNIQ_SAM_EXT'] = "_Unique.sam"
     extensions['SAM_INFO_EXT'] = "_info.txt"
     extensions['UNIQ_BAM_EXT'] = "_Unique.bam"
-    extensions['SORT_BAM_EXT'] = "_Unique.sorted"               
+    extensions['UNIQ_SORT_BAM_EXT'] = "_Unique.sorted"               
     return extensions
 
 #genearate fastq files using fastw dump from read
@@ -111,7 +113,7 @@ def getAllFastQs(outDir, libName):
     return fastQFiles
 
 
-#write a job for a given scaffold and read to a job file
+#write a job for a given scaffold and read to a unique sorted bam file
 def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
     extensions = getExtDict()
@@ -189,7 +191,7 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     #convert to sorted bam
     jobsFile.write(tools['SAMTOOLS'] +" sort "\
                    + " " + fastaDir + fastQFileName  + extensions['UNIQ_BAM_EXT']\
-                   + " " + fastaDir + fastQFileName + extensions['SORT_BAM_EXT']\
+                   + " " + fastaDir + fastQFileName + extensions['UNIQ_SORT_BAM_EXT']\
                    + " ")
 
     
@@ -197,6 +199,258 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     jobsFile.write("; touch " + currentJobLockFile  + ".out ")
     jobsFile.write("; fi")
     jobsFile.write("\n")
+
+
+
+
+#write a job for a given scaffold and single read "SAI"  to a bam file
+def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
+
+    extensions = getExtDict()
+    
+    #fastq file name
+    fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+    
+    #job lock file path for current job
+    currentJobLockFile = lockDirPath + fastQFileName + fastaFileName 
+
+    #check for  lock file in case current job is already executed
+    jobsFile.write("if [ -f " + currentJobLockFile  \
+                       + ".lock ]; then echo \"" \
+                       + currentJobLockFile  \
+                       +" done\"; exit 0; ")
+ 
+    #check if job is already finished
+    jobsFile.write("elif [ -f " + currentJobLockFile \
+                       + ".out ]; then echo \"" \
+                       + currentJobLockFile \
+                       +" done\"; exit 0;  ")
+    jobsFile.write("else ")
+    #need to execute job
+
+    #write lock file b4 executing job
+    jobsFile.write("touch "+currentJobLockFile+".lock; ")
+
+    #write statements for processing job
+
+    #change directory to scaffold where we are working
+    jobsFile.write("cd "+ fastaDir+"; ")
+
+    #Burrow wheel aligner processing
+    
+    #generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+
+
+    #assuming SAI is already generated
+
+    #generate SAM file for SAI
+    jobsFile.write(tools['BWA'] + " samse -n 15 " \
+                       + fastaFileName + extensions['SCAFF_EXT']\
+                       + " " + fastQFileName + extensions['SAI_EXT']\
+                       + " " + fastQFilePath + " >" \
+                       + " " + fastQFileName + extensions['SAM_EXT'] + "; ")
+    
+
+    #convert to unique sam with info
+    jobsFile.write("perl "+ tools['UNIQUESAMPL']\
+                   + " " + fastaDir + fastQFileName + extensions['SAM_EXT']\
+                   + " " + fastaDir + fastQFileName + extensions['UNIQ_SAM_EXT']\
+                   + " " + fastaDir + fastQFileName + extensions['SAM_INFO_EXT']\
+                   + "; ")
+
+    #convert to BAM
+    jobsFile.write(tools['SAMTOOLS'] +" view -bS -q 30 "\
+                   + " " + fastaDir + fastQFileName + extensions['UNIQ_SAM_EXT']\
+                   + " > " + fastaDir + fastQFileName + extensions['UNIQ_BAM_EXT']\
+                   + "; ")
+
+    #convert to sorted bam
+    jobsFile.write(tools['SAMTOOLS'] +" sort "\
+                   + " " + fastaDir + fastQFileName  + extensions['UNIQ_BAM_EXT']\
+                   + " " + fastaDir + fastQFileName + extensions['UNIQ_SORT_BAM_EXT']\
+                   + " ")
+
+    
+    #create lock.out file indicating completion
+    jobsFile.write("; touch " + currentJobLockFile  + ".out ")
+    jobsFile.write("; fi")
+    jobsFile.write("\n")
+
+    
+#write a job to combine paired reads and corresponding sai to bam
+def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
+                               lockDirPath, tools):
+    extensions = getExtDict()
+
+    #first read of pair
+    read1FilePath = pairedReadTuple[0]
+
+    #second read of pair
+    read2FilePath = pairedReadTuple[1]
+
+    #read1 file name
+    read1Name = (read1FilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #read2 file name
+    read2Name = (read2FilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #get the common prefix for both read
+    pairName = getCommonPrefix(read1Name, read2Name) 
+    
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+    
+    #job lock file path for current job
+    currentJobLockFile = lockDirPath + pairName + fastaFileName 
+
+    #check for  lock file in case current job is already executed
+    jobsFile.write("if [ -f " + currentJobLockFile  \
+                       + ".lock ]; then echo \"" \
+                       + currentJobLockFile  \
+                       +" done\"; exit 0; ")
+ 
+    #check if job is already finished
+    jobsFile.write("elif [ -f " + currentJobLockFile \
+                       + ".out ]; then echo \"" \
+                       + currentJobLockFile \
+                       +" done\"; exit 0;  ")
+    jobsFile.write("else ")
+    #need to execute job
+
+    #write lock file b4 executing job
+    jobsFile.write("touch "+currentJobLockFile+".lock; ")
+
+    #write statements for processing job
+
+    #change directory to scaffold where we are working
+    jobsFile.write("cd "+ fastaDir+"; ")
+
+    #Burrow wheel aligner processing
+    
+    #generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+
+
+    #assuming SAI file is alredy generated for both the reads
+    
+    #generate SAM file for both SAI
+    jobsFile.write(tools['BWA'] + " sampe -n 15 " \
+                       + fastaFileName + extensions['SCAFF_EXT']\
+                       + " " + read1Name + extensions['SAI_EXT']\
+                       + " " + read2Name + extensions['SAI_EXT']\
+                       + " " + read1FilePath + " >" \
+                       + " " + read2FilePath + " >" \
+                       + " " + pairName + extensions['SAM_EXT'] + "; ")
+    
+    #generate bam file for sam
+    jobsFile.write(tools['SAMTOOLS'] +" view -bS -q 30 "\
+                   + " " + fastaDir + pairName + extensions['SAM_EXT']\
+                   + " > " + fastaDir + pairName + extensions['BAM_EXT']\
+                   + "; ")
+
+    #convert to sorted bam
+    jobsFile.write(tools['SAMTOOLS'] +" sort "\
+                   + " " + fastaDir + pairName  + extensions['BAM_EXT']\
+                   + " " + fastaDir + pairName + extensions['SORT_BAM_EXT']\
+                   + " ")
+    
+    #create lock.out file indicating completion
+    jobsFile.write("; touch " + currentJobLockFile  + ".out ")
+    jobsFile.write("; fi")
+    jobsFile.write("\n")
+    
+
+
+#find common prefix string between two reads
+def getCommonPrefix(name1, name2):
+    commonPrefix = ''
+    for i in range(len(name1)):
+        if name1[i] == name2[i]:
+            commonPrefix += name1[i]
+        else:
+            break
+    return commonPrefix
+
+
+    
+
+#write a job for a given scaffold and read to a sai file
+def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
+
+    extensions = getExtDict()
+    
+    #fastq file name
+    fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+    
+    #job lock file path for current job
+    currentJobLockFile = lockDirPath + fastQFileName + fastaFileName 
+
+    #check for  lock file in case current job is already executed
+    jobsFile.write("if [ -f " + currentJobLockFile  \
+                       + ".lock ]; then echo \"" \
+                       + currentJobLockFile  \
+                       +" done\"; exit 0; ")
+ 
+    #check if job is already finished
+    jobsFile.write("elif [ -f " + currentJobLockFile \
+                       + ".out ]; then echo \"" \
+                       + currentJobLockFile \
+                       +" done\"; exit 0;  ")
+    jobsFile.write("else ")
+    #need to execute job
+
+    #write lock file b4 executing job
+    jobsFile.write("touch "+currentJobLockFile+".lock; ")
+
+    #write statements for processing job
+
+    #change directory to scaffold where we are working
+    jobsFile.write("cd "+ fastaDir+"; ")
+
+    #Burrow wheel aligner processing
+    
+    #generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+
+
+    #generate SAI, 10 threads used for generation
+    jobsFile.write(tools['BWA'] +" aln -t 10 -n 3 -l 1000000 -o 1 -e 5 "\
+                       + fastaFileName + extensions['SCAFF_EXT'] \
+                       + " " + fastQFilePath + " > "\
+                       + fastQFileName+extensions['SAI_EXT'] +"; ")
+
+
+    
+    #create lock.out file indicating completion
+    jobsFile.write("; touch " + currentJobLockFile  + ".out ")
+    jobsFile.write("; fi")
+    jobsFile.write("\n")
+
     
 
 """ defines the worker functionality for a particular read library and 
