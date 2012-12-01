@@ -1,5 +1,7 @@
 import sys
 import os
+from multiprocessing import Pool
+import multiprocessing, logging
 
 import workerForBam
 
@@ -58,19 +60,19 @@ def main():
         outDir = getAbsPath(sys.argv[4])
 
         #write all fastq's processing in job file
-        combineJobPath = writeCombineFastqJobs(outDir, fastqsDir, fastaDir,\
+        combineJobPath = writeCombineSAIJobs(outDir, fastqsDir, fastaDir,\
                                                    lockDirPath)
 
 
         tools = workerForBam.getToolsDict()
-        retcode = workerForBam.callParallelDrone(combineJobPath,\
+        """retcode = workerForBam.callParallelDrone(combineJobPath,\
                                                      tools['PARALLEL_DRONE'])
 
         if retcode != 0:
             #error occured while calling parallel drone
             print "parallel drone erred, in executing combined jobs"
             return -1
-        
+        """
         #now for all scaffolds combined bams and look for SNPs
         #parallelSNPsFinder.snpsFinder(fastaDir, outDir, locksDir)
         

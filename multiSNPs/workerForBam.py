@@ -385,6 +385,7 @@ def getCommonPrefix(name1, name2):
             commonPrefix += name1[i]
         else:
             break
+        commonPrefix = commonPrefix.rstrip('.')
     return commonPrefix
 
 
@@ -439,7 +440,7 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
 
     #generate SAI, 10 threads used for generation
-    jobsFile.write(tools['BWA'] +" aln -t 10 -n 3 -l 1000000 -o 1 -e 5 "\
+    jobsFile.write(tools['BWA'] +" aln -t 12 -n 3 -l 1000000 -o 1 -e 5 "\
                        + fastaFileName + extensions['SCAFF_EXT'] \
                        + " " + fastQFilePath + " > "\
                        + fastQFileName+extensions['SAI_EXT'] +"; ")
