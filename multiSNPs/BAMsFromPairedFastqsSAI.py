@@ -37,7 +37,7 @@ def getPairedReads(fastqDir):
     dirContents = os.listdir(fastqDir)
     readFileNames = []
     for fileName in dirContents:
-        if os.path.isfile(fileName) and \
+        if os.path.isfile(os.path.join(fastqDir, fileName)) and \
                     fileName.endswith('fastq'):
             readFileNames.append(fileName)
     readFileNames.sort()
@@ -49,14 +49,15 @@ def getPairedReads(fastqDir):
         misMatchCount = getMismatchCount(readFileNames[i], readFileNames[i+1])
         if misMatchCount == 1:
             #add the pair to read tuples
-            pairedReadTuples.append((readFileNames[i], readFileNames[i+1]))
+            pairedReadTuples.append((os.path.join(fastqDir,readFileNames[i]),\
+                                         os.path.join(fastqDir,readFileNames[i+1])))
     return pairedReadTuples
 
 
 
 """ write multiple jobs to convert paired SAIs to BAMs """
 def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
-    combinedBAMJobsName = 'combinedBAMJob.jobs'
+    combinedBAMJobsName = 'combinedBAMFrmPairedSAIsJob.jobs'
     combinedBAMJobsPath = os.path.join(outDir, combinedBAMJobsName)
     tools = workerForBam.getToolsDict()
     #contained all fastas against which to map the fastqs
@@ -73,8 +74,6 @@ def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
         pairedReads = getPairedReads(fastqDir)
         print 'pairedReads: ', pairedReads
         for pairedReadTuple in pairedReads:
-            pairedReadTuple[0] = os.path.join(fastqDir, pairedReadTuple[0])
-            pairedReadTuple[1] = os.path.join(fastqDir, pairedReadTuple[1])
             for fastaFilePath in fastaFilePaths:
                 workerForBam.writePairedSAIToBAMJob(combinedBAMJobsFile, \
                                                         fastaFilePath,\
@@ -109,14 +108,14 @@ def main():
 
 
         tools = workerForBam.getToolsDict()
-        retcode = workerForBam.callParallelDrone(combineJobPath,\
+        """retcode = workerForBam.callParallelDrone(combineJobPath,\
                                                      tools['PARALLEL_DRONE'])
 
         if retcode != 0:
             #error occured while calling parallel drone
             print "parallel drone erred, in executing combined jobs"
             return -1
-        
+        """
     else:
         print 'err: files missing'
 

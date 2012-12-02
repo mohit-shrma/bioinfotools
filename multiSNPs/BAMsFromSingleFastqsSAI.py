@@ -17,7 +17,7 @@ def getAbsPath(dir):
 
 """ write multiple jobs to convert single SAIs to BAMs """
 def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
-    combinedBAMJobsName = 'combinedBAMJob.jobs'
+    combinedBAMJobsName = 'combinedBAMFrmSingleSAIJob.jobs'
     combinedBAMJobsPath = os.path.join(outDir, combinedBAMJobsName)
     tools = workerForBam.getToolsDict()
     #contained all fastas against which to map the fastqs
@@ -68,14 +68,14 @@ def main():
                                                         lockDirPath)
 
         tools = workerForBam.getToolsDict()
-        retcode = workerForBam.callParallelDrone(combineJobPath,\
+        """retcode = workerForBam.callParallelDrone(combineJobPath,\
                                                      tools['PARALLEL_DRONE'])
 
         if retcode != 0:
             #error occured while calling parallel drone
             print "parallel drone erred, in executing combined jobs"
             return -1
-        
+        """
     else:
         print 'err: files missing'
 

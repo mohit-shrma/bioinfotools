@@ -443,7 +443,7 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     jobsFile.write(tools['BWA'] +" aln -t 12 -n 3 -l 1000000 -o 1 -e 5 "\
                        + fastaFileName + extensions['SCAFF_EXT'] \
                        + " " + fastQFilePath + " > "\
-                       + fastQFileName+extensions['SAI_EXT'] +"; ")
+                       + fastQFileName+extensions['SAI_EXT'] +" ")
 
 
     
