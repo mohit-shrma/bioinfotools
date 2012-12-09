@@ -17,7 +17,7 @@ def getFastaFilePaths(fastaPath):
     fastaFilePaths = []    
     #fastaPath contains all .fasta inside a dir with same name as fasta
     #get all fasta name without ext ".fasta" in a list
-    fastaDirs = workerForBam.getAllFastas(fastaPath)
+    fastaDirs = getAllFastas(fastaPath)
     for fastaDir in fastaDirs:
         #get fasta File Path        
         fastaFilePath = fastaPath + fastaDir + "/" + fastaDir + ".fasta"
@@ -490,6 +490,77 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
 
 
+
+
+    
+#write a job to combine paired reads and corresponding sai to bam
+def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
+
+    extensions = getExtDict()
+    tools = getToolsDict()
+        
+    #first read of pair
+    read1FilePath = pairedReadTuple[0]
+
+    #second read of pair
+    read2FilePath = pairedReadTuple[1]
+
+    #read1 file name
+    read1Name = (read1FilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #read2 file name
+    read2Name = (read2FilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #get the common prefix for both read
+    pairName = getCommonPrefix(read1Name, read2Name) 
+    
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+    
+    #Burrow wheel aligner processing
+    
+    #generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+
+
+    #assuming SAI file is alredy generated for both the reads
+    
+    #generate SAM file for both SAI
+    ret = callShellCmd(tools['BWA'] + " sampe -n 15 " \
+                       + " " + fastaFilePath\
+                       + " " + os.path.join(fastaDir, read1Name + extensions['SAI_EXT'])\
+                       + " " + os.path.join(fastaDir, read2Name + extensions['SAI_EXT'])\
+                       + " " + read1FilePath \
+                       + " " + read2FilePath + " >" \
+                       + " " + os.path.join(fastaDir, pairName + extensions['SAM_EXT']))
+    if ret != 1:
+        print 'SAM File creation failed: ', fastaDir, pairName
+        return ret
+    
+    #generate bam file for sam
+    ret = callShellCmd(tools['SAMTOOLS'] +" view -bS -q 30 "\
+                   + " " + fastaDir + pairName + extensions['SAM_EXT']\
+                   + " > " + fastaDir + pairName + extensions['BAM_EXT'])
+    if ret != 1:
+        print 'BAM File creation failed: ', fastaDir, pairName
+        return ret
+    
+    #convert to sorted bam
+    ret = callShellCmd(tools['SAMTOOLS'] +" sort "\
+                   + " " + fastaDir + pairName  + extensions['BAM_EXT']\
+                   + " " + fastaDir + pairName + extensions['SORT_BAM_EXT'])
+    if ret != 1:
+        print 'Sorted BAM File creation failed: ', fastaDir, pairName
+        return ret
+
+    
+
 #write a job for a given scaffold and single read "SAI"  to a bam file
 def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
 
@@ -521,7 +592,7 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     #generate SAM file for SAI
     samPath = os.path.join(fastaDir, fastQFileName + extensions['SAM_EXT'])
     ret = callShellCmd(tools['BWA'] + " samse -n 15 " \
-                       + fastaFileName + extensions['SCAFF_EXT']\
+                       + fastaFilePath\
                        + " " + saiPath\
                        + " " + fastQFilePath + " >" \
                        + " " + samPath)

@@ -8,12 +8,6 @@ import multiprocessing, logging
 import workerForBam
 
 
-def getAbsPath(dir):
-    absDir = os.path.abspath(dir)
-    if not absDir.endswith('/'):
-        absDir += '/'
-    return absDir
-
 """ returns the mismatch count b/w two string  """
 def getMismatchCount(string1, string2):
     mismatchCount = 0
@@ -60,15 +54,10 @@ def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
     combinedBAMJobsName = 'combinedBAMFrmPairedSAIsJob.jobs'
     combinedBAMJobsPath = os.path.join(outDir, combinedBAMJobsName)
     tools = workerForBam.getToolsDict()
+    
     #contained all fastas against which to map the fastqs
-    fastaFilePaths = []    
-    #fastaPath contains all .fasta inside a dir with same name as fasta
-    #get all fasta name without ext ".fasta" in a list
-    fastaDirs = workerForBam.getAllFastas(fastaPath)
-    for fastaDir in fastaDirs:
-        #get fasta File Path        
-        fastaFilePath = fastaPath + fastaDir + "/" + fastaDir + ".fasta"
-        fastaFilePaths.append(fastaFilePath)
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)
+
     print 'fastaFilePaths: ', fastaFilePaths
     with open(combinedBAMJobsPath, 'w') as combinedBAMJobsFile:
         pairedReads = getPairedReads(fastqDir)
@@ -82,6 +71,37 @@ def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
     return combinedBAMJobsPath
 
 
+
+def callPairedSAIToBAMWorker((fastaFilePath, pairedReadTuple)):
+    print "PID: ", os.getpid()
+    #TODO: write paired sai to bam job
+    return workerForBam.execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple)
+
+
+
+def callPairedSAIToBAMWorkers(fastqDir, fastaPath):
+    #contained all fastas against which to map the fastqs
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)
+    print 'fastaFilePaths: ', fastaFilePaths
+
+    pairedReads = getPairedReads(fastqDir)
+    print 'pairedReads: ', pairedReads
+
+
+    #initialize pool with number of possible jobs
+    pool = Pool(processes=len(pairedReads)*len(fastaFilePaths))
+    workersArgs = []
+
+    #for each paired read and fasta create a job
+    for pairedReadTuple in pairedReads:
+        for fastaFilePath in fastaFilePaths:
+            workersArgs.append((fastaFilePath, pairedReadTuple))
+
+    results = pool.map(callPairedSAIToBAMWorker, workersArgs)
+    pool.close()
+    pool.join()
+    return results
+
                     
 def main():
 
@@ -90,16 +110,16 @@ def main():
 
     if len(sys.argv) >= 4:
         #directory containing fastq library
-        fastqsDir = getAbsPath(sys.argv[1])
+        fastqsDir = workerForBam.getAbsPath(sys.argv[1])
         
         #directory containing other directories with fasta names
-        fastaDir = getAbsPath(sys.argv[2])
+        fastaDir = workerForBam.getAbsPath(sys.argv[2])
 
         #directory containing file locks
-        lockDirPath = getAbsPath(sys.argv[3])
+        lockDirPath = workerForBam.getAbsPath(sys.argv[3])
         
         #directory containing temp output -> fastQ's, jobsFile 
-        outDir = getAbsPath(sys.argv[4])
+        outDir = workerForBam.getAbsPath(sys.argv[4])
 
         #write all fastq's processing in job file
         combineJobPath = writeCombineBAMJobsFromSAI(outDir, fastqsDir,\

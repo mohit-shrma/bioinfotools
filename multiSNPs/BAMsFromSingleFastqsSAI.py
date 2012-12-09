@@ -33,7 +33,7 @@ def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
 
 def callSAIToBAMWorker((fastaFilePath, fastQFilePath)):
     print "PID: ", os.getpid()
-    return workerForBam.execSAIIToBAMJob(fastaFilePath, fastqPath)
+    return workerForBam.execSAIIToBAMJob(fastaFilePath, fastQFilePath)
 
 
 def callSAIToBAMWorkers(fastqDir, fastaPath):
@@ -85,7 +85,7 @@ def main():
                                                         lockDirPath)
 
         #call workers to generate BAMs from SAIs
-        results = callSAIToBAMWorkers(fastqDir, fastaPath)
+        results = callSAIToBAMWorkers(fastqsDir, fastaDir)
         print results
         
         tools = workerForBam.getToolsDict()
