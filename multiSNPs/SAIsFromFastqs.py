@@ -6,39 +6,55 @@ import multiprocessing, logging
 import workerForBam
 
 
-def getAbsPath(dir):
-    absDir = os.path.abspath(dir)
-    if not absDir.endswith('/'):
-        absDir += '/'
-    return absDir
-
-
-
 def writeCombineSAIJobs(outDir, fastqDir, fastaPath, lockDirPath):
     combinedSAIJobsName = 'combinedSAIJob.jobs'
     combinedSAIJobsPath = os.path.join(outDir, combinedSAIJobsName)
     tools = workerForBam.getToolsDict()
+    
     #contained all fastas against which to map the fastqs
-    fastaFilePaths = []    
-    #fastaPath contains all .fasta inside a dir with same name as fasta
-    #get all fasta name without ext ".fasta" in a list
-    fastaDirs = workerForBam.getAllFastas(fastaPath)
-    for fastaDir in fastaDirs:
-        #get fasta File Path        
-        fastaFilePath = fastaPath + fastaDir + "/" + fastaDir + ".fasta"
-        fastaFilePaths.append(fastaFilePath)
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)   
+
+    #contained all fastqs
+    fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
+    
     print 'fastaFilePaths: ', fastaFilePaths
     with open(combinedSAIJobsPath, 'w') as combinedSAIJobsFile:
-        dirContents = os.listdir(fastqDir)
-        for fileName in dirContents:
-            fastqPath = os.path.join(fastqDir, fileName)
-            if os.path.isfile(fastqPath) and\
-                    fileName.endswith('fastq'):
-                for fastaFilePath in fastaFilePaths:
-                    workerForBam.writeSAIJob(combinedSAIJobsFile, fastaFilePath,\
-                                              fastqPath, lockDirPath, tools)
+        for fastqPath in fastqFilePaths:
+            for fastaFilePath in fastaFilePaths:
+                workerForBam.writeSAIJob(combinedSAIJobsFile, fastaFilePath,\
+                                             fastqPath, lockDirPath, tools)
     return combinedSAIJobsPath
 
+
+
+def callSAIWorker((fastaFilePath, fastqPath, numThreads)):
+    print "PID: ", os.getpid()
+    return workerForBam.workerToGenSAI(fastaFilePath, fastqPath, numThreads)
+
+
+def callSAIWorkers(fastqDir, fastaPath, numThreads = 12):
+
+    #contained all fastas against which to map the fastqs
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)   
+    print fastaFilePaths
+    
+    #contained all fastqs 
+    fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
+    print fastqFilePaths
+    
+    #initialize pool with number of possible jobs
+    pool = Pool(processes=len(fastqFilePaths)*len(fastaFilePaths))
+    workersArgs = []
+
+    #for each read and fasta create a job
+    for fastaFilePath in fastaFilePaths:
+        for fastqPath in fastqFilePaths:
+            workersArgs.append((fastaFilePath, fastqPath, numThreads))
+
+    results = pool.map(callSAIWorker, workersArgs)
+    pool.close()
+    pool.join()
+    return results
 
                     
 def main():
@@ -48,33 +64,33 @@ def main():
 
     if len(sys.argv) >= 4:
         #directory containing fastq library
-        fastqsDir = getAbsPath(sys.argv[1])
+        fastqsDir = workerForBam.getAbsPath(sys.argv[1])
         
         #directory containing other directories with fasta names
-        fastaDir = getAbsPath(sys.argv[2])
+        fastaDir = workerForBam.getAbsPath(sys.argv[2])
 
         #directory containing file locks
-        lockDirPath = getAbsPath(sys.argv[3])
+        lockDirPath = workerForBam.getAbsPath(sys.argv[3])
         
         #directory containing temp output -> fastQ's, jobsFile 
-        outDir = getAbsPath(sys.argv[4])
+        outDir = workerForBam.getAbsPath(sys.argv[4])
+
+        #initialize deafult value of threads
+        numThreads = 12
+        #TODO: make the following design correct
+        if len(sys.argv) >= 5:
+            #TODO: exception handling for conversion to int
+            numThreads = int(sys.argv[5])
 
         #write all fastq's processing in job file
         combineJobPath = writeCombineSAIJobs(outDir, fastqsDir, fastaDir,\
                                                    lockDirPath)
 
+        #call workers to generate SAIs
+        #TODO: take number of threads as args
+        results = callSAIWorkers(fastqsDir, fastaDir, numThreads)
 
-        tools = workerForBam.getToolsDict()
-        """retcode = workerForBam.callParallelDrone(combineJobPath,\
-                                                     tools['PARALLEL_DRONE'])
-
-        if retcode != 0:
-            #error occured while calling parallel drone
-            print "parallel drone erred, in executing combined jobs"
-            return -1
-        """
-        #now for all scaffolds combined bams and look for SNPs
-        #parallelSNPsFinder.snpsFinder(fastaDir, outDir, locksDir)
+        print results
         
     else:
         print 'err: files missing'

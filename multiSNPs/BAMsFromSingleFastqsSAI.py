@@ -8,42 +8,59 @@ import multiprocessing, logging
 import workerForBam
 
 
-def getAbsPath(dir):
-    absDir = os.path.abspath(dir)
-    if not absDir.endswith('/'):
-        absDir += '/'
-    return absDir
-
-
 """ write multiple jobs to convert single SAIs to BAMs """
 def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
     combinedBAMJobsName = 'combinedBAMFrmSingleSAIJob.jobs'
     combinedBAMJobsPath = os.path.join(outDir, combinedBAMJobsName)
     tools = workerForBam.getToolsDict()
+
     #contained all fastas against which to map the fastqs
-    fastaFilePaths = []    
-    #fastaPath contains all .fasta inside a dir with same name as fasta
-    #get all fasta name without ext ".fasta" in a list
-    fastaDirs = workerForBam.getAllFastas(fastaPath)
-    for fastaDir in fastaDirs:
-        #get fasta File Path        
-        fastaFilePath = fastaPath + fastaDir + "/" + fastaDir + ".fasta"
-        fastaFilePaths.append(fastaFilePath)
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)   
+
+    #contained all fastqs
+    fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
+    
     print 'fastaFilePaths: ', fastaFilePaths
     with open(combinedBAMJobsPath, 'w') as combinedBAMJobsFile:
-        dirContents = os.listdir(fastqDir)
-        for fileName in dirContents:
-            fastqPath = os.path.join(fastqDir, fileName)
-            if os.path.isfile(fastqPath) and\
-                    fileName.endswith('fastq'):
-                for fastaFilePath in fastaFilePaths:
-                    workerForBam.writeSAIIToBAMJob(combinedBAMJobsFile,\
-                                                       fastaFilePath,\
-                                                       fastqPath,\
-                                                       lockDirPath, tools)
+        for fastqPath in fastqFilePaths:
+            for fastaFilePath in fastaFilePaths:
+                workerForBam.writeSAIIToBAMJob(combinedBAMJobsFile,\
+                                                   fastaFilePath,\
+                                                   fastqPath,\
+                                                   lockDirPath, tools)
     return combinedBAMJobsPath
 
-                    
+
+def callSAIToBAMWorker((fastaFilePath, fastQFilePath)):
+    print "PID: ", os.getpid()
+    return workerForBam.execSAIIToBAMJob(fastaFilePath, fastqPath)
+
+
+def callSAIToBAMWorkers(fastqDir, fastaPath):
+    #contained all fastas against which to map the fastqs
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)   
+    print fastaFilePaths
+    
+    #contained all fastqs 
+    fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
+    print fastqFilePaths
+    
+    #initialize pool with number of possible jobs
+    pool = Pool(processes=len(fastqFilePaths)*len(fastaFilePaths))
+    workersArgs = []
+
+    #for each read and fasta create a job
+    for fastaFilePath in fastaFilePaths:
+        for fastqPath in fastqFilePaths:
+            workersArgs.append((fastaFilePath, fastqPath))
+
+    results = pool.map(callSAIToBAMWorker, workersArgs)
+    pool.close()
+    pool.join()
+    return results
+
+
+
 def main():
 
     logger = multiprocessing.log_to_stderr()
@@ -51,22 +68,26 @@ def main():
 
     if len(sys.argv) >= 4:
         #directory containing fastq library
-        fastqsDir = getAbsPath(sys.argv[1])
+        fastqsDir = workerForBam.getAbsPath(sys.argv[1])
         
         #directory containing other directories with fasta names
-        fastaDir = getAbsPath(sys.argv[2])
+        fastaDir = workerForBam.getAbsPath(sys.argv[2])
 
         #directory containing file locks
-        lockDirPath = getAbsPath(sys.argv[3])
+        lockDirPath = workerForBam.getAbsPath(sys.argv[3])
         
         #directory containing temp output -> fastQ's, jobsFile 
-        outDir = getAbsPath(sys.argv[4])
+        outDir = workerForBam.getAbsPath(sys.argv[4])
 
         #write all fastq's processing in job file
         combineJobPath = writeCombineBAMJobsFromSAI(outDir, fastqsDir,\
                                                         fastaDir,\
                                                         lockDirPath)
 
+        #call workers to generate BAMs from SAIs
+        results = callSAIToBAMWorkers(fastqDir, fastaPath)
+        print results
+        
         tools = workerForBam.getToolsDict()
         """retcode = workerForBam.callParallelDrone(combineJobPath,\
                                                      tools['PARALLEL_DRONE'])

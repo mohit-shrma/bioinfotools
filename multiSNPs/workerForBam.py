@@ -2,12 +2,48 @@ import sys
 import os
 from subprocess import call
 
+
+
+def getAbsPath(dir):
+    absDir = os.path.abspath(dir)
+    if not absDir.endswith('/'):
+        absDir += '/'
+    return absDir
+
+
+#get all fasta paths inside a dir
+def getFastaFilePaths(fastaPath):
+    #contained all fastas against which to map the fastqs
+    fastaFilePaths = []    
+    #fastaPath contains all .fasta inside a dir with same name as fasta
+    #get all fasta name without ext ".fasta" in a list
+    fastaDirs = workerForBam.getAllFastas(fastaPath)
+    for fastaDir in fastaDirs:
+        #get fasta File Path        
+        fastaFilePath = fastaPath + fastaDir + "/" + fastaDir + ".fasta"
+        fastaFilePaths.append(fastaFilePath)
+    return fastaFilePaths
+
+    
+#get all fastqs inside a dir
+def getFastqFilePaths(fastqDir):
+    #contained all fastqs
+    fastqFilePaths = []
+    for fileName in os.listdir(fastqDir):
+            fastqPath = os.path.join(fastqDir, fileName)
+            if os.path.isfile(fastqPath) and\
+                    fileName.endswith('fastq'):
+                fastqFilePaths.append(fastqPath)
+    return fastqFilePaths
+
+
+
 #get the read name from the read path
 def getLibraryName(readLibraryPath):
     return ((readLibraryPath.split('/')[-1]).split('.'))[0]
 
 #check the existence if exists of fastq file in outDir
-def checkIfFastQExists(fileNamePrefix, fileExt, outDir):
+def checkIfFileExists(fileNamePrefix, fileExt, outDir):
     try:
         dirContents=os.listdir(outDir)
         for name in dirContents:
@@ -66,7 +102,7 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
         else:
             print >>sys.stderr, "child returned", retcode
             #check if retcode is 0 then check for existence of fataq file
-            if retcode == 0 and checkIfFastQExists(libName, getExtDict()['FASTQ_EXT'], outDir):
+            if retcode == 0 and checkIfFileExists(libName, getExtDict()['FASTQ_EXT'], outDir):
                 return 1
             else:
                 return 0
@@ -354,7 +390,7 @@ def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
                        + fastaFileName + extensions['SCAFF_EXT']\
                        + " " + read1Name + extensions['SAI_EXT']\
                        + " " + read2Name + extensions['SAI_EXT']\
-                       + " " + read1FilePath + " >" \
+                       + " " + read1FilePath \
                        + " " + read2FilePath + " >" \
                        + " " + pairName + extensions['SAM_EXT'] + "; ")
     
@@ -452,6 +488,155 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     jobsFile.write("; fi")
     jobsFile.write("\n")
 
+
+
+#write a job for a given scaffold and single read "SAI"  to a bam file
+def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
+
+    tools = getToolsDict()
+    extensions = getExtDict()
+    
+    #fastq file name
+    fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+
+    #Burrow wheel aligner processing
+    
+    #generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+
+
+    #assuming SAI is already generated
+    #SAI file path
+    saiPath = os.path.join(fastaDir, fastQFileName + extensions['SAI_EXT'])
+    
+    #generate SAM file for SAI
+    samPath = os.path.join(fastaDir, fastQFileName + extensions['SAM_EXT'])
+    ret = callShellCmd(tools['BWA'] + " samse -n 15 " \
+                       + fastaFileName + extensions['SCAFF_EXT']\
+                       + " " + saiPath\
+                       + " " + fastQFilePath + " >" \
+                       + " " + samPath)
+    if ret != 1:
+        print 'SAM File creation failed: ', fastaDir, fastQFileName
+        return ret
+
+    #convert to unique sam with info
+    ret = callShellCmd("perl "+ tools['UNIQUESAMPL']\
+                   + " " + os.path.join(fastaDir, fastQFileName + extensions['SAM_EXT'])\
+                   + " " + os.path.join(fastaDir, fastQFileName + extensions['UNIQ_SAM_EXT'])\
+                   + " " + os.path.join(fastaDir, fastQFileName + extensions['SAM_INFO_EXT']))
+    if ret != 1:
+        print 'Unique SAM File creation failed: ', fastaDir, fastQFileName
+        return ret
+
+    #convert to BAM
+    ret = callShellCmd(tools['SAMTOOLS'] +" view -bS -q 30 "\
+                   + " " + os.path.join(fastaDir, fastQFileName + extensions['UNIQ_SAM_EXT'])\
+                   + " > " + os.path.join(fastaDir, fastQFileName + extensions['UNIQ_BAM_EXT']))
+    if ret != 1:
+        print 'Uniq BAM File creation failed: ', fastaDir, fastQFileName
+        return ret
+    
+
+    #convert to sorted bam
+    ret = callShellCmd(tools['SAMTOOLS'] +" sort "\
+                   + " " + os.path.join(fastaDir, fastQFileName  + extensions['UNIQ_BAM_EXT'])\
+                   + " " + os.path.join(fastaDir, fastQFileName + extensions['UNIQ_SORT_BAM_EXT']))
+    if ret != 1:
+        print 'Uniq sorted BAM File creation failed: ', fastaDir, fastQFileName
+        return ret
+
+    
+
+
+
+    
+
+""" will execute command passed to it as executing on terminal """
+def callShellCmd(commandString):
+    retcode = -99
+    try:
+        retcode = call(commandString, shell=True)
+        if retcode < 0:
+            print >>sys.stderr, "child terminated by signal", retcode
+        else:
+            print >>sys.stderr, "child returned", retcode
+            #check if retcode is 0 then return 1,
+            #just to follow convention i.e 1 => correctly executed
+            if retcode == 0:
+                return 1
+            else:
+                return 0
+    except OSError, e:
+        print >>sys.stderr, "Execution failed: ", e
+    return retcode
+    
+
+""" generate sai files corresponding reads passed"""
+def workerToGenSAI(fastaFilePath, fastQFilePath, numThreads = 12):
+
+    extensions = getExtDict()
+
+    #get all tools
+    tools = getToolsDict()
+
+    #bwa
+    bwaTool = tools['BWA']
+
+    
+    #fastq file name
+    fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+
+    #SAI file path
+    saiPath = os.path.join(fastaDir, fastQFileName + extensions['SAI_EXT'])
+    
+    #TODO: generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+    
+    retcode = -99
+    try:
+        retcode = call(bwaTool + " aln -n 3 -l 1000000 -o 1 -e 5"\
+                           + " -t  " + str(numThreads) + " "\
+                           + fastaFilePath + " " + fastQFilePath\
+                           + " > " + saiPath,
+                       shell=True)
+        if retcode < 0:
+            print >>sys.stderr, "child terminated by signal", retcode
+        else:
+            print >>sys.stderr, "child returned", retcode
+            #check if retcode is 0 then check for existence of SAI file
+            if retcode == 0 and checkIfFileExists(fastQFileName,\
+                                                       extensions['SAI_EXT'],\
+                                                       fastaDir):
+                print saiPath + ' done.' 
+                return 1
+            else:
+                return 0
+    except OSError, e:
+        print >>sys.stderr, "Execution failed: ", e
+    return retcode
+
+
+
+    
     
 
 """ defines the worker functionality for a particular read library and 

@@ -64,14 +64,14 @@ def main():
 
 
         tools = workerForBam.getToolsDict()
-        retcode = workerForBam.callParallelDrone(combineJobPath,\
+        """retcode = workerForBam.callParallelDrone(combineJobPath,\
                                                      tools['PARALLEL_DRONE'])
 
         if retcode != 0:
             #error occured while calling parallel drone
             print "parallel drone erred, in executing combined jobs"
             return -1
-        
+        """
         #now for all scaffolds combined bams and look for SNPs
         #parallelSNPsFinder.snpsFinder(fastaDir, outDir, locksDir)
         
