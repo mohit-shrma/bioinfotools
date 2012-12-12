@@ -47,20 +47,20 @@ def main():
 
     if len(sys.argv) >= 4:
         #directory containing fastq library
-        fastqsDir = getAbsPath(sys.argv[1])
+        fastqsDir = workerForBam.getAbsPath(sys.argv[1])
         
         #directory containing other directories with fasta names
-        fastaDir = getAbsPath(sys.argv[2])
+        fastaDir = workerForBam.getAbsPath(sys.argv[2])
 
         #directory containing file locks
-        lockDirPath = getAbsPath(sys.argv[3])
+        lockDirPath = workerForBam.getAbsPath(sys.argv[3])
         
         #directory containing temp output -> fastQ's, jobsFile 
-        outDir = getAbsPath(sys.argv[4])
+        outDir = workerForBam.getAbsPath(sys.argv[4])
 
         #write all fastq's processing in job file
-        combineJobPath = writeCombineFastqJobs(outDir, fastqsDir, fastaDir,\
-                                                   lockDirPath)
+        #combineJobPath = writeCombineFastqJobs(outDir, fastqsDir, fastaDir,\
+        #    lockDirPath)
 
 
         tools = workerForBam.getToolsDict()
@@ -73,7 +73,7 @@ def main():
             return -1
         """
         #now for all scaffolds combined bams and look for SNPs
-        #parallelSNPsFinder.snpsFinder(fastaDir, outDir, locksDir)
+        parallelSNPsFinder.snpsFinder(fastaDir, outDir, lockDirPath)
         
     else:
         print 'err: files missing'

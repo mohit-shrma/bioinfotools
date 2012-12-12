@@ -80,6 +80,9 @@ def callPairedSAIToBAMWorker((fastaFilePath, pairedReadTuple)):
 
 
 def callPairedSAIToBAMWorkers(fastqDir, fastaPath):
+
+    print 'callPairedSAIToBAMWorkers'
+    
     #contained all fastas against which to map the fastqs
     fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)
     print 'fastaFilePaths: ', fastaFilePaths
@@ -126,16 +129,10 @@ def main():
                                                         fastaDir,\
                                                         lockDirPath)
 
+        #call workers to generate paired BAMs from SAIs
+        results = callPairedSAIToBAMWorkers(fastqsDir, fastaDir)
+        print results
 
-        tools = workerForBam.getToolsDict()
-        """retcode = workerForBam.callParallelDrone(combineJobPath,\
-                                                     tools['PARALLEL_DRONE'])
-
-        if retcode != 0:
-            #error occured while calling parallel drone
-            print "parallel drone erred, in executing combined jobs"
-            return -1
-        """
     else:
         print 'err: files missing'
 

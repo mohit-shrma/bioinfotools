@@ -54,15 +54,15 @@ def writeJob(jobsFile, fastaFilePath, lockDirPath, tools):
     
     #merge all bams for this scaffold into single bama
     jobsFile.write(tools['SAMTOOLS'] + " merge "\
-                       + fastaDir + fastaFileName + extensions['SORT_BAM_EXT'] + ".bam "\
-                       + fastaDir + "*" + extensions['SORT_BAM_EXT'] + ".bam "\
+                       + fastaDir + fastaFileName + extensions['UNIQ_SORT_BAM_EXT'] + ".bam "\
+                       + fastaDir + "*" + extensions['UNIQ_SORT_BAM_EXT'] + ".bam "\
                        + " ; ")
     
     #add or replace read groups
     jobsFile.write("java -Xms2048m -jar " + tools['PICARD_TOOLS']\
                        + "/AddOrReplaceReadGroups.jar I="\
                        + fastaDir + fastaFileName\
-                       + extensions['SORT_BAM_EXT'] + ".bam  O="\
+                       + extensions['UNIQ_SORT_BAM_EXT'] + ".bam  O="\
                        + fastaDir + fastaFileName + "_picard2.sorted.bam"\
                        + " SORT_ORDER=coordinate RGLB=1 RGPL=illumina RGPU=bar" \
                        + " RGSM=BMGC VALIDATION_STRINGENCY=LENIENT"\
@@ -174,12 +174,12 @@ def snpsFinder(fastaPath, outDir, lockDirPath):
 
     #execute the wrote jobs through DRONE parallely
     print "drone: ", outDir + snpsFinderJobFileName
-    retCode = workerForBam.callParallelDrone( outDir + snpsFinderJobFileName,\
+    """retCode = workerForBam.callParallelDrone( outDir + snpsFinderJobFileName,\
                                                   tools['PARALLEL_DRONE'])
     if retCode != 0:
         #error occured while calling parallel drone
         print "parallel drone erred"
-        return -1
+        return -1"""
     return 1
 
 

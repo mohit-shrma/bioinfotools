@@ -37,13 +37,17 @@ def callSAIToBAMWorker((fastaFilePath, fastQFilePath)):
 
 
 def callSAIToBAMWorkers(fastqDir, fastaPath):
+
+    print 'callSAIToBAMWorkers'
+
     #contained all fastas against which to map the fastqs
     fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)   
-    print fastaFilePaths
+    print 'fastaFilePaths: ', fastaFilePaths
     
     #contained all fastqs 
     fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
     print fastqFilePaths
+    print 'fastqFilePaths: ', fastqFilePaths
     
     #initialize pool with number of possible jobs
     pool = Pool(processes=len(fastqFilePaths)*len(fastaFilePaths))
@@ -88,15 +92,6 @@ def main():
         results = callSAIToBAMWorkers(fastqsDir, fastaDir)
         print results
         
-        tools = workerForBam.getToolsDict()
-        """retcode = workerForBam.callParallelDrone(combineJobPath,\
-                                                     tools['PARALLEL_DRONE'])
-
-        if retcode != 0:
-            #error occured while calling parallel drone
-            print "parallel drone erred, in executing combined jobs"
-            return -1
-        """
     else:
         print 'err: files missing'
 

@@ -542,6 +542,8 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
     if ret != 1:
         print 'SAM File creation failed: ', fastaDir, pairName
         return ret
+    else:
+        print 'SAM File creation success: ', fastaDir, pairName
     
     #generate bam file for sam
     ret = callShellCmd(tools['SAMTOOLS'] +" view -bS -q 30 "\
@@ -550,6 +552,8 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
     if ret != 1:
         print 'BAM File creation failed: ', fastaDir, pairName
         return ret
+    else:
+        print 'BAM File creation success: ', fastaDir, pairName
     
     #convert to sorted bam
     ret = callShellCmd(tools['SAMTOOLS'] +" sort "\
@@ -558,6 +562,10 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
     if ret != 1:
         print 'Sorted BAM File creation failed: ', fastaDir, pairName
         return ret
+    else:
+        print 'Sorted BAM File creation success: ', fastaDir, pairName
+        
+    return 1
 
     
 
@@ -599,7 +607,9 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     if ret != 1:
         print 'SAM File creation failed: ', fastaDir, fastQFileName
         return ret
-
+    else:
+        print 'SAM File creation success: ', fastaDir, fastQFileName
+        
     #convert to unique sam with info
     ret = callShellCmd("perl "+ tools['UNIQUESAMPL']\
                    + " " + os.path.join(fastaDir, fastQFileName + extensions['SAM_EXT'])\
@@ -608,6 +618,8 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     if ret != 1:
         print 'Unique SAM File creation failed: ', fastaDir, fastQFileName
         return ret
+    else:
+        print 'Unique SAM File creation success: ', fastaDir, fastQFileName
 
     #convert to BAM
     ret = callShellCmd(tools['SAMTOOLS'] +" view -bS -q 30 "\
@@ -616,6 +628,8 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     if ret != 1:
         print 'Uniq BAM File creation failed: ', fastaDir, fastQFileName
         return ret
+    else:
+        print 'Uniq BAM File creation success: ', fastaDir, fastQFileName
     
 
     #convert to sorted bam
@@ -625,12 +639,12 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     if ret != 1:
         print 'Uniq sorted BAM File creation failed: ', fastaDir, fastQFileName
         return ret
+    else:
+        print 'Uniq sorted BAM File creation success: ', fastaDir, fastQFileName
 
-    
+    return 1
 
 
-
-    
 
 """ will execute command passed to it as executing on terminal """
 def callShellCmd(commandString):

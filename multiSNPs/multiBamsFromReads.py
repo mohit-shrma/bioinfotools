@@ -110,10 +110,10 @@ def main():
             print 'job concat error'
             return
 
-
+        
         """TODO: dont forget to generate bwt by using bwa"""
 
-       """ 
+        """ 
         tools = workerForBam.getToolsDict()
         retcode = workerForBam.callParallelDrone(combineJobPath, tools['PARALLEL_DRONE'])
 
