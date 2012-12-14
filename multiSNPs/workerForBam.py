@@ -3,7 +3,6 @@ import os
 from subprocess import call
 
 
-
 def getAbsPath(dir):
     absDir = os.path.abspath(dir)
     if not absDir.endswith('/'):
@@ -290,13 +289,22 @@ def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools
     #assuming SAI is already generated
 
     #generate SAM file for SAI
+    samFilePath = fastQFileName + extensions['SAM_EXT']
     jobsFile.write(tools['BWA'] + " samse -n 15 " \
                        + fastaFileName + extensions['SCAFF_EXT']\
                        + " " + fastQFileName + extensions['SAI_EXT']\
                        + " " + fastQFilePath + " >" \
-                       + " " + fastQFileName + extensions['SAM_EXT'] + "; ")
-    
+                       + " " + samFilePath + "; ")
 
+
+    #rename sam to a temp bak file
+    samTempPath = samFilePath + '.bak'
+    jobsFile.write("mv " + samFilePath + ' ' + samTempPath + "; ")
+    
+    #remove 'Ns' or reference '*' in third col
+    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath + ' > '\
+                           + samFilePath + "; ")
+    
     #convert to unique sam with info
     jobsFile.write("perl "+ tools['UNIQUESAMPL']\
                    + " " + fastaDir + fastQFileName + extensions['SAM_EXT']\
@@ -386,13 +394,23 @@ def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
     #assuming SAI file is alredy generated for both the reads
     
     #generate SAM file for both SAI
+    samFilePath = os.path.join(fastaDir, pairName + extensions['SAM_EXT'])
     jobsFile.write(tools['BWA'] + " sampe -n 15 " \
                        + fastaFileName + extensions['SCAFF_EXT']\
                        + " " + read1Name + extensions['SAI_EXT']\
                        + " " + read2Name + extensions['SAI_EXT']\
                        + " " + read1FilePath \
                        + " " + read2FilePath + " >" \
-                       + " " + pairName + extensions['SAM_EXT'] + "; ")
+                       + " " + samFilePath + "; ")
+
+    
+    #rename sam to a temp bak file
+    samTempPath = samFilePath + '.bak'
+    jobsFile.write("mv " + samFilePath + ' ' + samTempPath + ";")
+    
+    #remove 'Ns' or reference '*' in third col
+    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath + ' > '\
+                           + samFilePath + ";")
     
     #generate bam file for sam
     jobsFile.write(tools['SAMTOOLS'] +" view -bS -q 30 "\
@@ -532,22 +550,43 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
     #assuming SAI file is alredy generated for both the reads
     
     #generate SAM file for both SAI
+    samFilePath = os.path.join(fastaDir, pairName + extensions['SAM_EXT'])
     ret = callShellCmd(tools['BWA'] + " sampe -n 15 " \
                        + " " + fastaFilePath\
                        + " " + os.path.join(fastaDir, read1Name + extensions['SAI_EXT'])\
                        + " " + os.path.join(fastaDir, read2Name + extensions['SAI_EXT'])\
                        + " " + read1FilePath \
                        + " " + read2FilePath + " >" \
-                       + " " + os.path.join(fastaDir, pairName + extensions['SAM_EXT']))
+                       + " " + samFilePath)
     if ret != 1:
         print 'SAM File creation failed: ', fastaDir, pairName
         return ret
     else:
         print 'SAM File creation success: ', fastaDir, pairName
+
+    #rename sam to a temp bak file
+    samTempPath = samFilePath + '.bak'
+    ret = callShellCmd("mv " + samFilePath + ' ' + samTempPath)
+    if ret != 1:
+        print 'SAM bakup failed: ', fastaDir, pairName
+        return ret
+    else:
+        print 'SAM bakup success: ', fastaDir, pairName
+
     
+    #remove 'Ns' or reference '*' in third col
+    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath+ ' > '\
+                           + samFilePath)
+    if ret != 1:
+        print 'SAM awk trimming for ref = *  failed: ', fastaDir, pairName
+        return ret
+    else:
+        print 'SAM  awk trimming for ref = * success: ', fastaDir, pairName
+
+        
     #generate bam file for sam
     ret = callShellCmd(tools['SAMTOOLS'] +" view -bS -q 30 "\
-                   + " " + fastaDir + pairName + extensions['SAM_EXT']\
+                   + " " + samFilePath\
                    + " > " + fastaDir + pairName + extensions['BAM_EXT'])
     if ret != 1:
         print 'BAM File creation failed: ', fastaDir, pairName
@@ -610,6 +649,26 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     else:
         print 'SAM File creation success: ', fastaDir, fastQFileName
         
+
+    #rename sam to a temp bak file
+    samTempPath = samPath + '.bak'
+    ret = callShellCmd("mv " + samPath + ' ' + samTempPath)
+    if ret != 1:
+        print 'SAM bakup failed: ', fastaDir, pairName
+        return ret
+    else:
+        print 'SAM bakup success: ', fastaDir, pairName
+
+    
+    #remove 'Ns' or reference '*' in third col
+    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath+ ' > ' + samPath)
+    if ret != 1:
+        print 'SAM awk trimming for ref = *  failed: ', fastaDir, pairName
+        return ret
+    else:
+        print 'SAM  awk trimming for ref = * success: ', fastaDir, pairName
+
+
     #convert to unique sam with info
     ret = callShellCmd("perl "+ tools['UNIQUESAMPL']\
                    + " " + os.path.join(fastaDir, fastQFileName + extensions['SAM_EXT'])\
