@@ -1,7 +1,7 @@
 import sys
 import os
-from subprocess import call
-
+from subprocess import call, check_call
+from subprocess import CalledProcessError
 
 def getAbsPath(dir):
     absDir = os.path.abspath(dir)
@@ -36,10 +36,10 @@ def getFastqFilePaths(fastqDir):
     return fastqFilePaths
 
 
-
 #get the read name from the read path
 def getLibraryName(readLibraryPath):
     return ((readLibraryPath.split('/')[-1]).split('.'))[0]
+
 
 #check the existence if exists of fastq file in outDir
 def checkIfFileExists(fileNamePrefix, fileExt, outDir):
@@ -69,6 +69,7 @@ def getToolsDict():
     tools['PARALLEL_DRONE'] = "mpiexec_mpt -np 96 /home/koronis/mohit/programs/Drone/Drone "
     return tools
 
+
 #a dictionary of all possible extensions
 def getExtDict():
     extensions = {}
@@ -85,6 +86,7 @@ def getExtDict():
     extensions['UNIQ_BAM_EXT'] = "_Unique.bam"
     extensions['UNIQ_SORT_BAM_EXT'] = "_Unique.sorted"               
     return extensions
+
 
 #genearate fastq files using fastw dump from read
 def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
@@ -128,6 +130,7 @@ def callParallelDrone(jobsFilePath, parallelDrone):
 def getScaffoldName(scaffName):
     return ''.join((scaffName.split('.'))[:-1])
 
+
 #get all fastas from a given directory
 def getAllFastas(scaffDir):
     dirContents = os.listdir(scaffDir)
@@ -135,6 +138,7 @@ def getAllFastas(scaffDir):
                                                  os.path.join(scaffDir, name)\
                                                      ) ]
     return scaffDirs
+
 
 #get all fastQ files for a read from outDirectory
 def getAllFastQs(outDir, libName):
@@ -236,8 +240,6 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     jobsFile.write("\n")
 
 
-
-
 #write a job for a given scaffold and single read "SAI"  to a bam file
 def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
@@ -302,7 +304,7 @@ def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools
     jobsFile.write("mv " + samFilePath + ' ' + samTempPath + "; ")
     
     #remove 'Ns' or reference '*' in third col
-    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath + ' > '\
+    jobsFile.write("awk '$3 != \"*\" {print $0} ' " + samTempPath + ' > '\
                            + samFilePath + "; ")
     
     #convert to unique sam with info
@@ -409,7 +411,7 @@ def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
     jobsFile.write("mv " + samFilePath + ' ' + samTempPath + ";")
     
     #remove 'Ns' or reference '*' in third col
-    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath + ' > '\
+    jobsFile.write("awk '$3 != \"*\" {print $0} ' " + samTempPath + ' > '\
                            + samFilePath + ";")
     
     #generate bam file for sam
@@ -427,8 +429,7 @@ def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
     #create lock.out file indicating completion
     jobsFile.write("; touch " + currentJobLockFile  + ".out ")
     jobsFile.write("; fi")
-    jobsFile.write("\n")
-    
+    jobsFile.write("\n")    
 
 
 #find common prefix string between two reads
@@ -441,8 +442,6 @@ def getCommonPrefix(name1, name2):
             break
         commonPrefix = commonPrefix.rstrip('.')
     return commonPrefix
-
-
     
 
 #write a job for a given scaffold and read to a sai file
@@ -506,12 +505,8 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
     jobsFile.write("; fi")
     jobsFile.write("\n")
 
-
-
-
-
     
-#write a job to combine paired reads and corresponding sai to bam
+#execute a job to combine paired reads and corresponding sai to bam
 def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
 
     extensions = getExtDict()
@@ -575,7 +570,7 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
 
     
     #remove 'Ns' or reference '*' in third col
-    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath+ ' > '\
+    ret = callShellCmd("awk '$3 != \"*\" {print $0} ' " + samTempPath+ ' > '\
                            + samFilePath)
     if ret != 1:
         print 'SAM awk trimming for ref = *  failed: ', fastaDir, pairName
@@ -606,9 +601,8 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
         
     return 1
 
-    
 
-#write a job for a given scaffold and single read "SAI"  to a bam file
+#execute a job for a given scaffold and single read "SAI"  to a bam file
 def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
 
     tools = getToolsDict()
@@ -648,27 +642,27 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
         return ret
     else:
         print 'SAM File creation success: ', fastaDir, fastQFileName
-        
 
     #rename sam to a temp bak file
     samTempPath = samPath + '.bak'
+    print 'samPath: ', samPath
+    print 'samTempPath: ', samTempPath
+    print 'copy cmd: ', "mv " + samPath + ' ' + samTempPath
     ret = callShellCmd("mv " + samPath + ' ' + samTempPath)
     if ret != 1:
-        print 'SAM bakup failed: ', fastaDir, pairName
+        print 'SAM bakup failed: ', samPath
         return ret
     else:
-        print 'SAM bakup success: ', fastaDir, pairName
+        print 'SAM bakup success: ', samPath
 
-    
     #remove 'Ns' or reference '*' in third col
-    ret = callShellCmd("awk '$3 != \"*\" {print $0} '" + samTempPath+ ' > ' + samPath)
+    ret = callShellCmd("awk '$3 != \"*\" {print $0} ' " + samTempPath+ ' > ' + samPath)
     if ret != 1:
-        print 'SAM awk trimming for ref = *  failed: ', fastaDir, pairName
+        print 'SAM awk trimming for ref = *  failed: ', samPath
         return ret
     else:
-        print 'SAM  awk trimming for ref = * success: ', fastaDir, pairName
-
-
+        print 'SAM  awk trimming for ref = * success: ', samPath
+    
     #convert to unique sam with info
     ret = callShellCmd("perl "+ tools['UNIQUESAMPL']\
                    + " " + os.path.join(fastaDir, fastQFileName + extensions['SAM_EXT'])\
@@ -704,24 +698,26 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     return 1
 
 
-
 """ will execute command passed to it as executing on terminal """
 def callShellCmd(commandString):
     retcode = -99
+    
     try:
-        retcode = call(commandString, shell=True)
-        if retcode < 0:
-            print >>sys.stderr, "child terminated by signal", retcode
-        else:
-            print >>sys.stderr, "child returned", retcode
-            #check if retcode is 0 then return 1,
+        print 'executing command: ', commandString
+        retcode = check_call(commandString, shell=True)
+        if retcode == 0:
             #just to follow convention i.e 1 => correctly executed
-            if retcode == 0:
-                return 1
-            else:
-                return 0
+            return 1
+
     except OSError, e:
         print >>sys.stderr, "Execution failed: ", e
+    except CalledProcessError, e:
+        #retcode is not 0
+        print >>sys.stderr, "Execution failed: ", e
+        print >>sys.stderr, "child returned", e.returncode
+        retcode = e.returncode
+    sys.stderr.flush()
+    sys.stdout.flush()
     return retcode
     
 
@@ -778,10 +774,6 @@ def workerToGenSAI(fastaFilePath, fastQFilePath, numThreads = 12):
         print >>sys.stderr, "Execution failed: ", e
     return retcode
 
-
-
-    
-    
 
 """ defines the worker functionality for a particular read library and 
 fasta files present in directory path fastapath, also specified are outDir

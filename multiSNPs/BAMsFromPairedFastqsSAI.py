@@ -89,10 +89,16 @@ def callPairedSAIToBAMWorkers(fastqDir, fastaPath):
 
     pairedReads = getPairedReads(fastqDir)
     print 'pairedReads: ', pairedReads
+    
+    #get number of processors
+    numProcs = multiprocessing.cpu_count()
+    print 'number of cpus: ', numProcs
 
+    #compute number of jobs
+    numJobs = len(pairedReads)*len(fastaFilePaths)
 
     #initialize pool with number of possible jobs
-    pool = Pool(processes=len(pairedReads)*len(fastaFilePaths))
+    pool = Pool(processes=min(numJobs, numProcs))
     workersArgs = []
 
     #for each paired read and fasta create a job

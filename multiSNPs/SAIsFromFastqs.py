@@ -42,8 +42,15 @@ def callSAIWorkers(fastqDir, fastaPath, numThreads = 12):
     fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
     print fastqFilePaths
     
+    #get number of processors
+    numProcs = multiprocessing.cpu_count()
+    print 'number of cpus: ', numProcs
+
+    #compute number of jobs
+    numJobs = len(fastqFilePaths)*len(fastaFilePaths)
+
     #initialize pool with number of possible jobs
-    pool = Pool(processes=len(fastqFilePaths)*len(fastaFilePaths))
+    pool = Pool(processes=min(numJobs, numProcs))
     workersArgs = []
 
     #for each read and fasta create a job
