@@ -39,10 +39,12 @@ def callWorkers(jobsFileName, numProcs = 0):
     jobCount = len(workersArgs)
 
     if numProcs == 0:
-        numProcs = jobCount 
-
+        #get number of processors from env
+        numProcs = multiprocessing.cpu_count()
+        print 'cpuCount: ', numProcs
+        
     #initialize pool with number of possible jobs
-    pool = Pool(processes=numProcs)
+    pool = Pool(processes=min(numProcs, jobCount))
     
     results = pool.map(callShellCmd, workersArgs)
     pool.close()
@@ -59,12 +61,15 @@ def main():
         #file containing jobs
         jobsFileName = sys.argv[1]
 
-        #get number of processors
-        numProcs = int(sys.argv[2])
-        
+        if len(sys.argv) >= 2:
+            #number of processors provided by user
+            numProcs = int(sys.argv[2])
+        else:
+            numProcs = 0
+
         #call workers to execute jobs
         results = callWorkers(jobsFileName, numProcs)
-
+        
         print results
         
     else:
