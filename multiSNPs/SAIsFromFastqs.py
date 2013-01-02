@@ -6,7 +6,7 @@ import multiprocessing, logging
 import workerForBam
 
 
-def writeCombineSAIJobs(outDir, fastqDir, fastaPath, lockDirPath):
+def writeCombineSAIJobs(outDir, fastqDir, fastaPath, lockDirPath, numThreads):
     combinedSAIJobsName = 'combinedSAIJob.jobs'
     combinedSAIJobsPath = os.path.join(outDir, combinedSAIJobsName)
     tools = workerForBam.getToolsDict()
@@ -22,12 +22,14 @@ def writeCombineSAIJobs(outDir, fastqDir, fastaPath, lockDirPath):
         for fastqPath in fastqFilePaths:
             for fastaFilePath in fastaFilePaths:
                 workerForBam.writeSAIJob(combinedSAIJobsFile, fastaFilePath,\
-                                             fastqPath, lockDirPath, tools)
+                                             fastqPath, lockDirPath, tools,\
+                                             numThreads)
     return combinedSAIJobsPath
 
 
 
 def callSAIWorker((fastaFilePath, fastqPath, numThreads)):
+    print 'callSAIWorker: ', fastaFilePath, fastqPath, numThreads
     print "PID: ", os.getpid()
     return workerForBam.workerToGenSAI(fastaFilePath, fastqPath, numThreads)
 
@@ -91,7 +93,7 @@ def main():
 
         #write all fastq's processing in job file
         combineJobPath = writeCombineSAIJobs(outDir, fastqsDir, fastaDir,\
-                                                   lockDirPath)
+                                                   lockDirPath, numThreads)
 
         #call workers to generate SAIs
         #TODO: take number of threads as args

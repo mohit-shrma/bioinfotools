@@ -445,7 +445,8 @@ def getCommonPrefix(name1, name2):
     
 
 #write a job for a given scaffold and read to a sai file
-def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
+def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools,\
+                    numThreads):
 
     extensions = getExtDict()
     
@@ -493,7 +494,7 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
 
 
     #generate SAI, 10 threads used for generation
-    jobsFile.write(tools['BWA'] +" aln -t 12 -n 3 -l 1000000 -o 1 -e 5 "\
+    jobsFile.write(tools['BWA'] +" aln -t " + str(numThreads) + " -n 3 -l 1000000 -o 1 -e 5 "\
                        + fastaFileName + extensions['SCAFF_EXT'] \
                        + " " + fastQFilePath + " > "\
                        + fastQFileName+extensions['SAI_EXT'] +" ")
@@ -751,6 +752,15 @@ def workerToGenSAI(fastaFilePath, fastQFilePath, numThreads = 12):
     #                   + fastaFileName + extensions['SCAFF_EXT'] \
     #                   + " " + fastaFilePath + "; ")
     
+
+    print 'executing fastq to sai: ',
+    cmdStr = bwaTool + " aln -n 3 -l 1000000 -o 1 -e 5"\
+                           + " -t  " + str(numThreads) + " "\
+                           + fastaFilePath + " " + fastQFilePath\
+                           + " > " + saiPath
+    print cmdStr
+    sys.stdout.flush()
+
     retcode = -99
     try:
         retcode = call(bwaTool + " aln -n 3 -l 1000000 -o 1 -e 5"\
@@ -758,6 +768,8 @@ def workerToGenSAI(fastaFilePath, fastQFilePath, numThreads = 12):
                            + fastaFilePath + " " + fastQFilePath\
                            + " > " + saiPath,
                        shell=True)
+        print saiPath, retcode
+        sys.stdout.flush()
         if retcode < 0:
             print >>sys.stderr, "child terminated by signal", retcode
         else:
