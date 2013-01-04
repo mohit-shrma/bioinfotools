@@ -44,6 +44,7 @@ def callSAIWorkers(fastqDir, fastaPath, numThreads = 12):
     
     #compute number of jobs
     numJobs = len(fastqFilePaths)*len(fastaFilePaths)
+    print 'number of jobs: ', numJobs
 
     sys.stdout.flush()
     
@@ -80,15 +81,14 @@ def main():
         #write all fastq's processing in job file
         combineJobPath = writeCombineSAIJobs(outDir, fastqsDir, fastaDir,\
                                                    lockDirPath, numThreads)
-
-        #call workers to generate SAIs
-        #TODO: take number of threads as args
-        results = callSAIWorkers(fastqsDir, fastaDir, numThreads)
-
-        print results
+        print 'combine jobs path: ', combineJobPath
         
+        #call workers to generate SAIs
+        callSAIWorkers(fastqsDir, fastaDir, numThreads)
+
     else:
         print 'err: files missing'
 
+        
 if __name__ == '__main__':
     main()
