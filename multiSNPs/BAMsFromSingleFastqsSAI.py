@@ -31,9 +31,11 @@ def writeCombineBAMJobsFromSAI(outDir, fastqDir, fastaPath, lockDirPath):
     return combinedBAMJobsPath
 
 
+
 def callSAIToBAMWorker((fastaFilePath, fastQFilePath)):
     print "PID: ", os.getpid()
     return workerForBam.execSAIIToBAMJob(fastaFilePath, fastQFilePath)
+
 
 
 def callSAIToBAMWorkers(fastqDir, fastaPath):
@@ -48,9 +50,16 @@ def callSAIToBAMWorkers(fastqDir, fastaPath):
     fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
     print fastqFilePaths
     print 'fastqFilePaths: ', fastqFilePaths
+
+    #get number of processors
+    numProcs = multiprocessing.cpu_count()
+    print 'number of cpus: ', numProcs
+
+    #compute number of jobs
+    numJobs = len(fastqFilePaths)*len(fastaFilePaths)
     
     #initialize pool with number of possible jobs
-    pool = Pool(processes=len(fastqFilePaths)*len(fastaFilePaths))
+    pool = Pool(processes=min(numJobs, numProcs))
     workersArgs = []
 
     #for each read and fasta create a job
