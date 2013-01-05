@@ -442,7 +442,47 @@ def getCommonPrefix(name1, name2):
             break
         commonPrefix = commonPrefix.rstrip('.')
     return commonPrefix
+
+
+#write a serial job for a given scaffold and read to a sai file
+def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, tools,\
+                    numThreads):
+
+    extensions = getExtDict()
     
+    #fastq file name
+    fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
+
+    #fasta file name
+    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+
+    #fasta dir
+    fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
+    
+    #write statements for processing job
+
+    #change directory to scaffold where we are working
+    jobsFile.write("cd "+ fastaDir+"; ")
+
+    #Burrow wheel aligner processing
+    
+    #generate index, do following separately as this is for scaffold,
+    #not for read
+    #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
+    #                   + fastaFileName + extensions['SCAFF_EXT'] \
+    #                   + " " + fastaFilePath + "; ")
+
+
+    #generate SAI, 10 threads used for generation
+    jobsFile.write(tools['BWA'] +" aln -t " + str(numThreads) + " -n 3 -l 1000000 -o 1 -e 5 "\
+                       + fastaFileName + extensions['SCAFF_EXT'] \
+                       + " " + fastQFilePath + " > "\
+                       + fastQFileName+extensions['SAI_EXT'] +" ")
+
+
+    jobsFile.write("\n")
+
+
 
 #write a job for a given scaffold and read to a sai file
 def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools,\
@@ -753,7 +793,8 @@ def workerToGenSAI(fastaFilePath, fastQFilePath, numThreads = 12):
     #                   + " " + fastaFilePath + "; ")
     
 
-    print 'executing fastq to sai: ',
+    print 'executing fastq to sai: ', fastaFilePath, fastQFilePath, numThreads
+    sys.stdout.flush()
     cmdStr = bwaTool + " aln -n 3 -l 1000000 -o 1 -e 5"\
                            + " -t  " + str(numThreads) + " "\
                            + fastaFilePath + " " + fastQFilePath\

@@ -25,6 +25,25 @@ def writeCombineSAIJobs(outDir, fastqDir, fastaPath, lockDirPath, numThreads):
     return combinedSAIJobsPath
 
 
+def writeCombineSerialSAIJobs(outDir, fastqDir, fastaPath, numThreads):
+    combinedSAIJobsName = 'combinedSerialSAIJob.sh'
+    combinedSAIJobsPath = os.path.join(outDir, combinedSAIJobsName)
+    tools = workerForBam.getToolsDict()
+    
+    #contained all fastas against which to map the fastqs
+    fastaFilePaths = workerForBam.getFastaFilePaths(fastaPath)   
+
+    #contained all fastqs
+    fastqFilePaths = workerForBam.getFastqFilePaths(fastqDir)
+    
+    print 'fastaFilePaths: ', fastaFilePaths
+    with open(combinedSAIJobsPath, 'w') as combinedSAIJobsFile:
+        for fastqPath in fastqFilePaths:
+            for fastaFilePath in fastaFilePaths:
+                workerForBam.writeSerialSAIJob(combinedSAIJobsFile, fastaFilePath,\
+                                             fastqPath, tools,\
+                                             numThreads)
+    return combinedSAIJobsPath
 
 def callSAIWorker((fastaFilePath, fastqPath, numThreads)):
     print 'callSAIWorker: ', fastaFilePath, fastqPath, numThreads
@@ -82,9 +101,14 @@ def main():
         combineJobPath = writeCombineSAIJobs(outDir, fastqsDir, fastaDir,\
                                                    lockDirPath, numThreads)
         print 'combine jobs path: ', combineJobPath
+
+        #write all serial fastq's processing in job script file
+        combineJobPath = writeCombineSerialSAIJobs(outDir, fastqDir, fastaPath, numThreads)
+        print 'combine serial jobs script: ', combineJobPath
+
         
         #call workers to generate SAIs
-        callSAIWorkers(fastqsDir, fastaDir, numThreads)
+        #callSAIWorkers(fastqsDir, fastaDir, numThreads)
 
     else:
         print 'err: files missing'
