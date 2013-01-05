@@ -445,7 +445,7 @@ def getCommonPrefix(name1, name2):
 
 
 #write a serial job for a given scaffold and read to a sai file
-def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, tools,\
+def writeSerialSAIJob(jobsFile, fastaFilePath, fastQFilePath, tools,\
                     numThreads):
 
     extensions = getExtDict()

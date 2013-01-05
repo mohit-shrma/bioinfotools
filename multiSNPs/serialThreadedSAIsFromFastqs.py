@@ -103,7 +103,7 @@ def main():
         print 'combine jobs path: ', combineJobPath
 
         #write all serial fastq's processing in job script file
-        combineJobPath = writeCombineSerialSAIJobs(outDir, fastqDir, fastaPath, numThreads)
+        combineJobPath = writeCombineSerialSAIJobs(outDir, fastqsDir, fastaDir, numThreads)
         print 'combine serial jobs script: ', combineJobPath
 
         
