@@ -37,7 +37,7 @@ def prepareReadSplittingTasks(ipReadsDir, splitThreshold):
     print 'number of cpus: ', numProcs
 
     #compute number of jobs
-    numJobs = len(fastqFilePaths)*len(fastaFilePaths)
+    numJobs = len(fastqFilePaths)
 
     #initialize pool with number of possible jobs
     pool = Pool(processes=min(numJobs, numProcs))
