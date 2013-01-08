@@ -71,9 +71,9 @@ def sortedPredGeneSymbols(promoterFileName):
 
 #return the symbols dictionary in following form
 # {symbol:[scaffName1:([(start, end), (start, end) #sort by start#],
-                       [(start, end), (start, end)] #sort by end),
+#                       [(start, end), (start, end)] #sort by end),
 #          scaffName2:([(start, end), (start, end) #sort by start#],
-                       [(start, end), (start, end)] #sort by end),
+#                       [(start, end), (start, end)] #sort by end),
 #  symbol2:[...]}        
 def getESTSymbolsDict(predSymbols, estFileName):
     symbolsDict = {}
@@ -117,22 +117,6 @@ def getESTSymbolsDict(predSymbols, estFileName):
                 #update symbols dict
                 symbolsDict[estSymbol] = estSymbolDict
 
-        #sort the list for dictionary symbol once by start
-        """for estSymbol, estSymbolDict  in symbolsDict.iteritems():
-            for scaffName in estSymbolDict.keys():
-
-                #get the ranges of ext mapping
-                scaffRanges = estSymbolDict[scaffName]
-                
-                #sort scaffRanges by start
-                sortedByStart = sorted(scaffRanges, key = lambda tup:tup[0])
-
-                #sort scaffRanges by end
-                sortedByEnd = sorted(scaffRanges, key = lambda tup:tup[1])
-
-                #update estSymbol dict with both list for a scafold
-                estSymbol[scaffName] = (sortedByStart, sortedByEnd)"""
-                
         #closes for, return symbols dictionary
         return symbolsDict
 
@@ -170,7 +154,8 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                         if promoterDirection == '+':
                             #'ATG' case promoter before the sequence,
                             #need to consider start of the regions
-                            rangesSortedByStart = sorted(scaffRanges, key = lambda tup:tup[0])                                                   #take the min start
+                            rangesSortedByStart = sorted(scaffRanges, key = lambda tup:tup[0])
+                            #take the min start
                             minStart = rangesSortedByStart[0][0]
                             end = rangesSortedByStart[0][1]
                             if promoterStart <= minStart\
