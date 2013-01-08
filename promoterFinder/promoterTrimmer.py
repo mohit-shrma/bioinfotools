@@ -223,14 +223,19 @@ def main():
     if len(sys.argv) >= 3:
         #read the promoter file name
         promoterFileName = sys.argv[1]
+
         #get file name for EST
         estFileName = sys.argv[2]
+
         #get file name for trimmed promoter output
         trimPromoterFileName = sys.argv[3]
+
         #get the valid gene symbols in sorted list
         predSymbols = sortedPredGeneSymbols(promoterFileName)
+
         #get the EST symbols dcictionary for these symbols
         estSymbolsDict = getESTSymbolsDict(predSymbols, estFileName)
+
         #based on est symbols trim promoters and output trimmed length in file
         writeTrimPromoters(estSymbolsDict, promoterFileName,\
                                trimPromoterFileName)        
