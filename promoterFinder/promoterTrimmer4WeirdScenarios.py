@@ -181,6 +181,8 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                                         #promoterStart and promoter end
                                         #i.e. EST overlaps
                                         trimLength = promoterEnd - estStart + 1
+                                        break
+                                    
                                 if trimLength == 0:
                                     print promoterScaffName, 'EST: ', str(minStart+1), str(end+1),\
                                         ' to left of \'+\' promoter: ', \
@@ -216,6 +218,8 @@ def writeTrimPromoters(estSymbolsDict, promoterFileName, trimPromoterFileName):
                                         #trim promoter, estEnd lies in between promoter
                                         #i.e. EST overlaps
                                         trimLength = estEnd - promoterStart + 1
+                                        break
+                                    
                                 if trimLength == 0:
                                     print promoterScaffName, 'EST: ', str(start+1), str(maxEnd+1),\
                                         ' to right of \'-\' promoter: ', \
