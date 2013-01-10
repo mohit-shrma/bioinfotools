@@ -176,6 +176,7 @@ public class LastzOutputParser {
 		return hMap;
 	}
 	
+	
 	public String getMatchedLength() {
 		HashMap<String, Vector> hMap = getInorderLengthWalk();
 		String str = "";
@@ -197,6 +198,10 @@ public class LastzOutputParser {
 													minMatchLen);
 	}
 	
+	
+	/*
+	 * get portion of passed interval not covered in interval tree
+	 */
 	public int getIntervalNonCoverage(int start, int end) {
 		int unMatchedLen = intervalTree.getIntervalNotCovered(
 											new IntervalNode(start, end));
