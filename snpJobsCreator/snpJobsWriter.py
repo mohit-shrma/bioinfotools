@@ -15,15 +15,15 @@ class FileExts:
     
 class Programs:
     #specify the path
-    SAMTOOLS = 'samtool'
-    BCFTOOLS = 'bcftool'
-    MAP_QUAL = 'mapQual.pl'
-    INDEL_INFO = 'indelInf.pl'
+    SAMTOOLS = '/project/huws/huwsgroup/Nitya/SAMtools18/samtools-0.1.18/samtools'
+    BCFTOOLS = '/project/huws/huwsgroup/Nitya/SAMtools18/samtools-0.1.18/bcftools/bcftools'
+    MAP_QUAL = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_mappingqual2.pl'
+    INDEL_INFO = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_indelinfo.pl'
 
     
 def getAbsPath(dir):
     absDir = os.path.abspath(dir)
-    if not absDir.endswith('/'):
+    if not os.path.isfile(dir) and not absDir.endswith('/'):
         absDir += '/'
     return absDir
 

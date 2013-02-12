@@ -32,7 +32,7 @@ def callShellCmd(commandString):
 def callWorkers(jobsFileName, numProcs = 0):
     workersArgs = []
     
-    with open(jobsFileName, 'w') as jobsFile:
+    with open(jobsFileName, 'r') as jobsFile:
         for line in jobsFile:
             workersArgs.append(line)
 
