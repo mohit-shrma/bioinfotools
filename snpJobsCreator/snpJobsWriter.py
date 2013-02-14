@@ -150,8 +150,8 @@ def genThirdSNPByFisher(ipDir, prefix):
 
 
 def getFourthSNPByPoisson(ipDir, prefix):
-    thirdSNP = os.path.join(ipDir, prefix + '_3' + '.' + FileExts.SNP)
-    fourthSNP = os.path.join(ipDir, prefix + '_4' + '.' + FileExts.SNP)
+    #thirdSNP = os.path.join(ipDir, prefix + '_3' + '.' + FileExts.SNP)
+    #fourthSNP = os.path.join(ipDir, prefix + '_4' + '.' + FileExts.SNP)
     cmdStr = Programs.POISSON_VARREAD + ' ' + ipDir + ' ' + prefix 
     return cmdStr
 
