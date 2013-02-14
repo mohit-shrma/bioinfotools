@@ -1,6 +1,6 @@
 import sys
 import os
-
+from scipy.stats import poisson
 
 class FileExts:
     SORTED_BAM = 'sorted.bam'
@@ -11,7 +11,8 @@ class FileExts:
     FASTA = 'fa'
     LOCK = 'lock'
     OUT = 'out'
-
+    PILEUP = 'pileup'
+    
     
 class Programs:
     #specify the path
@@ -19,6 +20,12 @@ class Programs:
     BCFTOOLS = '/project/huws/huwsgroup/Nitya/SAMtools18/samtools-0.1.18/bcftools/bcftools'
     MAP_QUAL = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_mappingqual2.pl'
     INDEL_INFO = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_indelinfo.pl'
+    ANDRE_FISHER = 'matlab -r /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/Andrew_fisher'
+    POISSON_VARREAD = 'python /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/fourthSNP.py'
+    NUC_CONV = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/nucleotideconvertion.pl'
+    NUC_CONV_ACID = '/project/huws/huwsgroup/mohit/bgicomp/anrewPipe/Nucleicacid.txt'
+    ADD_READPOS = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_readposition3.pl'
+    SIXTH_SNP = 'python /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/sixthSNP.py'
 
     
 def getAbsPath(dir):
@@ -37,6 +44,11 @@ def findAllExtFiles(ipDir, fileExt):
                      fileName.endswith(fileExt.upper())):
             resultFiles.append(filePath)
     return resultFiles
+
+
+#get all pileups inside dir
+def findAllPileups(ipDir):
+    return findAllExtFiles(ipDir, FileExts.PILEUP)
 
 
 #get all snps inside dir
@@ -108,6 +120,7 @@ def getAllBAMDirs(ipDir):
 
 def genFirstSNP(ipDir, prefix):
     snps = findAllSNPs(ipDir)
+    #TODO: dont take _?.snp
     ipSnp = snps[0]
     cmdstr = ''
     cmdstr += Programs.MAP_QUAL + ' ' + ipSnp + ' '\
@@ -128,6 +141,42 @@ def genSecondSNP(ipDir, prefix):
         + indel + ' ' + secondSNP
     return cmdStr
 
+
+def genThirdSNPByFisher(ipDir, prefix):
+    secondSNP = os.path.join(ipDir, prefix + '_2' + '.' + FileExts.SNP)
+    thirdSNP = os.path.join(ipDir, prefix + '_3' + '.' + FileExts.SNP)
+    cmdStr = Programs.ANDRE_FISHER + '(' + secondSNP + ',' + thirdSNP + ')'
+    return cmdStr
+
+
+def getFourthSNPByPoisson(ipDir, prefix):
+    thirdSNP = os.path.join(ipDir, prefix + '_3' + '.' + FileExts.SNP)
+    fourthSNP = os.path.join(ipDir, prefix + '_4' + '.' + FileExts.SNP)
+    cmdStr = Programs.POISSON_VARREAD + ' ' + ipDir + ' ' + prefix 
+    return cmdStr
+
+
+def getFifthSNP(ipDir, prefix):
+    fourthSNP = os.path.join(ipDir, prefix + '_4' + '.' + FileExts.SNP)
+    fifthSNP = os.path.join(ipDir, prefix + '_5' + '.' + FileExts.SNP)
+    cmdStr = Programs.NUC_CONV + ' ' + fourthSNP + ' ' + Programs.NUC_CONV_ACID  + ' ' + fifthSNP
+    return cmdStr
+
+
+
+def getSixthSNP(ipDir, prefix):
+    fifthSNP = os.path.join(ipDir, prefix + '_5' + '.' + FileExts.SNP)
+    cmdStr = Programs.SIXTH_SNP + ' ' + ipDir + ' ' + prefix 
+    return cmdStr
+    
+
+def getFinalSNP(ipDir, prefix):
+    sixthSNP = os.path.join(ipDir, prefix + '_6.' + '.' + FileExts.SNP)
+    seventhSNP = os.path.join(ipDir, prefix + '_7.' + '.' + FileExts.SNP)
+    #assuming only one pileup inside
+    pileUp = findAllPileups(ipDir)[0]
+    cmdStr = Programs.ADD_READPOS + ' ' +  sixthSNP + ' ' + pileUp + ' ' + seventhSNP
+    return cmdStr
 
 def getSingleSNPJob(ipDir, lockDir, sequenceName):
     jobStr = ''
@@ -168,17 +217,32 @@ def getSingleSNPJob(ipDir, lockDir, sequenceName):
     cmdStrs = []
     
     #generate bcf
-    cmdStrs.append(generateBCF(ipDir, prefix, sequenceName))
+    #cmdStrs.append(generateBCF(ipDir, prefix, sequenceName))
 
     #generate vcf
-    cmdStrs.append(generateVCF(ipDir, prefix))
+    #cmdStrs.append(generateVCF(ipDir, prefix))
 
     #generate first snp
-    cmdStrs.append(genFirstSNP(ipDir, prefix))
+    #cmdStrs.append(genFirstSNP(ipDir, prefix))
 
     #generate second snp
-    cmdStrs.append(genSecondSNP(ipDir, prefix))
+    #cmdStrs.append(genSecondSNP(ipDir, prefix))
 
+    #generate third snp
+    cmdStrs.append(genThirdSNPByFisher(ipDir, prefix))
+
+    #generate fourth snp
+    cmdStrs.append(getFourthSNPByPoisson(ipDir, prefix))
+
+    #generate fifth snp
+    cmdStrs.append(getFifthSNP(ipDir, prefix))
+
+    #generate sixth snp
+    cmdStrs.append(getSixthSNP(ipDir, prefix))
+
+    #generate final snp
+    cmdStrs.append(getFinalSNP(ipDir, prefix))
+    
     #combine all coleected command strings
     jobStr += '; '.join(cmdStrs)
 
