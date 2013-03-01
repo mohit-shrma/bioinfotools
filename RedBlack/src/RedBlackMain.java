@@ -18,12 +18,16 @@ import com.interval.IntervalTree;
 import com.lastzout.LastzOutputParser;
 import com.redblack.*;
 
-
-
 /*
  * -lastzOutDir /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut  
  * -output /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut/NCGRRefRelaxStats75K.txt  
  * -minMatchLen 75000
+ */
+
+/*
+ * -lastzOutDir //Users/mohit/Documents/hugroup/koronis/July11LastzBGIRef/lastzOut  
+ * -output /Users/mohit/Documents/hugroup/koronis/July11LastzBGIRef/coverageStats.txt  
+ * -minMatchLen 5000
  */
 
 class RedBlackMain {
@@ -151,11 +155,25 @@ class RedBlackMain {
 			String newScaffName = "";
 			int geneStart = -1;
 			int geneEnd = -1;
+			int geneLength = -1;
+			int unMatchedLen = -1;
+			int matchedLen = -1;
+			float pcMatchedLen = 0;
 			boolean isGeneCovered = false;
 			String geneType = "";
 			String geneSymbol = "";
 			String scaffFileName = "";
 			File scaffOutFile = null;
+			
+			/*open file to record EST/gene type, geneFeatureSymbol, 
+				its length and length matched in high confidence region
+			*/
+			FileOutputStream fos3 = new FileOutputStream(outputFileName 
+					+ "HiConfStats");
+			BufferedOutputStream bos3 = new BufferedOutputStream(fos3);
+			bos3.write(("GeneType\tGeneFeatureSymbol\tLength"+
+								"\tLengthInHiConf\tpcMatchedLen\n").getBytes());
+			
 			
 			while ((line = geneMapReader.readNext()) != null 
 						&& line.length > 1) {
@@ -165,6 +183,7 @@ class RedBlackMain {
 				geneEnd = Integer.parseInt(line[GENE_MAP_END_COL]);
 				geneType = line[GENE_MAP_TYPE_COL];
 				geneSymbol = line[GENE_MAP_FEAT_SYMB_COL];
+				geneLength = geneEnd - geneStart + 1;
 				
 				allGeneSymbol.add(geneSymbol);
 				
@@ -186,6 +205,7 @@ class RedBlackMain {
 								LASTZ_SIZE_COL);
 						lastzOutputParser.parse();
 					} else {
+						//scaffold output file not found
 						geneLost.add(geneSymbol);
 						continue;
 					}
@@ -200,30 +220,46 @@ class RedBlackMain {
 				//check for the conflict of interval [start, end] in current
 				//scaffold interval tree
 				if (null != lastzOutputParser) {
-					isGeneCovered = lastzOutputParser
-										.isCompletelyCovered(geneStart, 
+					isGeneCovered = lastzOutputParser.isCompletelyCovered(
+															geneStart, 
 															geneEnd, 
 															minMatchLen);
 					
 					if (!geneCovered.containsKey(geneSymbol) || 
 							geneCovered.get(geneSymbol)) {
+						//if gene symbol is not present in dict or if previous
+						//value of gene coverage is True
 						geneCovered.put(geneSymbol, isGeneCovered);
 					}
+					
+					
+					/*record EST/gene type, geneFeatureSymbol, 
+					its length and length matched in high confidence region
+					*/
+					unMatchedLen = lastzOutputParser.getIntervalNonCoverage(
+															geneStart, geneEnd);
+					matchedLen =  geneLength - unMatchedLen;
+					pcMatchedLen = ((float)matchedLen)/geneLength *100;
+					bos3.write((geneType + '\t' + geneSymbol + '\t' 
+								+ geneLength + '\t' + matchedLen + '\t' 
+								+ pcMatchedLen + '\n').getBytes());
+					
 				}
 				
 			}
 			
 			System.out.println("Total gene symbols: " + allGeneSymbol.size());
 			
-			System.out.println("Total gene symbols in scaffs: " + geneCovered.size());
-			System.out.println("Lost gene in scaffs: " + geneLost.size());
+			System.out.println("Total gene symbols found in scaffs: " + geneCovered.size());
+			System.out.println("Lost genes in not included scaffs: " + geneLost.size());
 			
-			
+			//remove gene symbols not found from geneCovered set
 			//Set<String> difference = new HashSet<String>(geneCovered.keySet());
 			geneCovered.keySet().removeAll(geneLost);
 			
-			System.out.println("Total gene symbols covered in scaffs: " + geneCovered.size());
-			System.out.println("Lost gene in scaffs: " + geneLost.size());
+			System.out.println("Total gene symbols in scaffs excluding lost ones: "
+										+ geneCovered.size());
+			//System.out.println("Lost gene in scaffs: " + geneLost.size());
 			
 			
 			FileOutputStream fos = new FileOutputStream(outputFileName);;
@@ -248,10 +284,10 @@ class RedBlackMain {
 			    }
 			}
 			
-			System.out.println("geneSymbolsCoveredCount: " 
+			System.out.println("Gene symbols completely covered: " 
 								+ geneSymbolsCoveredCount);
 			
-			System.out.println("geneSymbolsNotCoveredCount: " 
+			System.out.println("Gene symbols not completely covered: " 
 								+ geneSymbolsNotCoveredCount);	
 			
 			bos.flush();
@@ -294,6 +330,25 @@ class RedBlackMain {
 				}
 			}
 			
+			bos3.flush();
+			
+			if (bos3 != null) {
+				try {
+					bos3.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			if (fos3 != null) {
+				try {
+					fos3.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -423,15 +478,28 @@ class RedBlackMain {
 		
 		if (!rbArgs.geneCoverage) {
 			/*
-			 * takes dir containining all lastz outputs, filename to putput the results to
+			 * -lastzOutDir /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut  
+			 * -output /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut/NCGRRefRelaxStats75K.txt  
+			 * -minMatchLen 75000
 			 */
+
 			obj.processDir(dirName, opFileName, minMatchLen);
 		} else {
+			/*
+			 * takes dir containining all lastz outputs, filename to putput the results to
+			 * -lastzOutDir //Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut  
+			 * -output /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/coverage900Stats.txt  
+			 * -minMatchLen 900 
+			 * -geneMapFile /Users/mohit/Documents/hugroup/koronis/geneMap/NCGRGeneMap.txt
+			 */
 			/*takes dir containing all fasta.outs(lastz o/p), gene annotation file,
 			 * filename to output to 
-			 * /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut  
-			 * /Users/mohit/Documents/hugroup/koronis/NCGRGeneMap.txt  
+			 * /Users/mohit/Documents/hugroup/koronis/June13RelaxLastzRefNCGR/June13LastzOut
 			 * /Users/mohit/Documents/hugroup/koronis/geneMapOut.txt
+			 * /Users/mohit/Documents/hugroup/koronis/NCGRGeneMap.txt  
+			 * 
+			 * 
+			 * 
 			 */
 			geneMapFileName = rbArgs.geneMapFile;
 			obj.countGeneMappings(dirName, geneMapFileName, opFileName, minMatchLen);

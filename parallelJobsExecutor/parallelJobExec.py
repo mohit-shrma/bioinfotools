@@ -15,6 +15,7 @@ def callShellCmd(commandString):
         retcode = check_call(commandString, shell=True)
         if retcode == 0:
             #just to follow convention i.e 1 => correctly executed
+            print '{ ' +commandString + ' } ... done.' 
             return 1
 
     except OSError, e:
@@ -32,7 +33,7 @@ def callShellCmd(commandString):
 def callWorkers(jobsFileName, numProcs = 0):
     workersArgs = []
     
-    with open(jobsFileName, 'w') as jobsFile:
+    with open(jobsFileName, 'r') as jobsFile:
         for line in jobsFile:
             workersArgs.append(line)
 
@@ -57,11 +58,11 @@ def main():
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBDEBUG)
 
-    if len(sys.argv) >= 1:
+    if len(sys.argv) > 1:
         #file containing jobs
         jobsFileName = sys.argv[1]
 
-        if len(sys.argv) >= 2:
+        if len(sys.argv) > 2:
             #number of processors provided by user
             numProcs = int(sys.argv[2])
         else:
