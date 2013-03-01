@@ -22,7 +22,7 @@ def plotPileups(pileUpFileName, intervalSize, stepSize):
         stepSums = []
         
         #number of steps per interval
-        numStepsPerInt = intervalSize/step
+        numStepsPerInt = intervalSize/stepSize
 
         #sum per step
         sum = 0
@@ -46,19 +46,8 @@ def plotPileups(pileUpFileName, intervalSize, stepSize):
                     #add pending last sum
                     stepSums.append(sum)
 
-                    #get sum per interval
-                    sumsPerInt = []
-                    currIntSum = 0
-                    
-                    for i in range(len(stepSums)):
-                        currIntSum += stepSums[i]
-                        if (i+1) % numStepsPerInt == 0:
-                            #got last step of the interval
-                            sumsPerInt.append(currIntSum)
-                            currIntSum -= stepSums[i + 1 - numStepsPerInt]
-                            
-                    #add last interval sum
-                    sumsPerInt.append(currIntSum)
+                    #get the moving average of step intervals
+                    sumsPerInt = getMovingAvg(stepSums, numStepsPerInt, intervalSize)
                     
                     #plot sumsPerInt for previous scaffold
                     createPlot(prevScaffName, sumsPerInt, prevScaffBase)
@@ -66,8 +55,45 @@ def plotPileups(pileUpFileName, intervalSize, stepSize):
                 #initialize parameters for new scaffold
                 basePos = int(row[Pileup_Consts.BASE_POS])
                 prevScaffBase = basePos
+                prevScaffName = scaffName
                 count = int(row[Pileup_Consts.COUNT])
                 sum = count
+                
+        #plot the last scaffold
+        #add pending last sum
+        stepSums.append(sum)
+                
+        #get the moving average of step intervals
+        sumsPerInt = getMovingAvg(stepSums, numStepsPerInt, intervalSize)
+                    
+        #plot sumsPerInt for previous scaffold
+        createPlot(prevScaffName, sumsPerInt, prevScaffBase)
+                    
+                
+
+#get the moving average of step interval
+def getMovingAvg(stepSums, numStepsPerInt, intervalSize): 
+
+    #get sum per interval
+    sumsPerInt = []
+    currIntSum = 0
+
+    #to keep step count
+    stepCount = 0
+    
+    for i in range(len(stepSums)):
+        currIntSum += stepSums[i]
+        stepCount += 1
+        if stepCount % numStepsPerInt == 0:
+            #got last step of the interval
+            sumsPerInt.append(float(currIntSum)/intervalSize)
+            currIntSum -= stepSums[i + 1 - numStepsPerInt]
+            stepCount = 1
+            
+    #add last interval sum
+    sumsPerInt.append(float(currIntSum)/intervalSize)
+                    
+    return sumsPerInt
 
                 
 
@@ -106,7 +132,7 @@ def main():
         pileUpFileName = os.path.abspath(sys.argv[1])
         intervalSize = int(sys.argv[2])
         stepSize = int(sys.argv[3])
-        
+        plotPileups(pileUpFileName, intervalSize, stepSize)
     else:
         print 'err: invalid args'
         
