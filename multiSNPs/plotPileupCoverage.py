@@ -26,36 +26,27 @@ def getAllPileups(pileupDir):
 
 
 
-def plotPileups((pileUpFileName, intervalSize, stepSize, plotDir)):
+#will take input as scaffold pile up file return and return step sum
+def getStepSums(pileUpFileName, intervalSize, stepSize):
+
+    #store sum of step size sequences
+    stepSums = array('L', [])
+
     with open(pileUpFileName, 'r') as pileUpFile:
         pileUpReader = csv.reader(pileUpFile, delimiter='\t')
         prevScaffName = ''
         prevScaffBase = -1
-        #store sum of step size sequences
-        stepSums = array('L', [])
-        
+
         #number of steps per interval
         numStepsPerInt = intervalSize/stepSize
 
         #sum per step
         sum = 0
 
-        print 'plotPileups', (pileUpFileName, intervalSize, stepSize, plotDir)
-        
-        if plotDir is None:
-            plotDir = os.path.abspath("./pileupPlots")
-
         try:
 
             for row in pileUpReader:
                 scaffName = row[Pileup_Consts.SCAFF_NAME]
-
-                if os.path.exists(plotDir):
-                    plotFile = os.path.join(plotDir, scaffName + '.png')
-                    if os.path.exists(plotFile):
-                        fileStats = os.stat(plotFile)
-                        if fileStats.st_size > 0:
-                            break
 
                 if prevScaffName == scaffName:
 
@@ -77,8 +68,6 @@ def plotPileups((pileUpFileName, intervalSize, stepSize, plotDir)):
                         #get the moving average of step intervals
                         sumsPerInt = getMovingAvg(stepSums, numStepsPerInt, intervalSize)
 
-                        #plot sumsPerInt for previous scaffold
-                        createPlot(prevScaffName, sumsPerInt, prevScaffBase)
 
                     #initialize parameters for new scaffold
                     basePos = int(row[Pileup_Consts.BASE_POS])
@@ -91,16 +80,38 @@ def plotPileups((pileUpFileName, intervalSize, stepSize, plotDir)):
             #add pending last sum
             stepSums.append(sum)
 
-            #get the moving average of step intervals
-            (sumsPerInt, threshExceedingCount)  = getMovingAvg(stepSums, numStepsPerInt, intervalSize)
-            
-            #plot sumsPerInt for previous scaffold
-            if threshExceedingCount > 0:
-                createPlot(prevScaffName, sumsPerInt, prevScaffBase, numStepsPerInt, plotDir)
         except csv.Error, e:
             print ('scaffold %s, line %d: %s' % (prevScaffName, pileUpReader.line_num, e))
+
+    return stepSums
+
+
+def plotPileups((pileUpFileName, intervalSize, stepSize, plotDir)):
+
+        print 'plotPileups', (pileUpFileName, intervalSize, stepSize, plotDir)
+        
+        if plotDir is None:
+            plotDir = os.path.abspath("./pileupPlots")
+
+        stepSums = getStepSums(pileUpFileName, intervalSize, stepSize)
+        
+        if len(stepSums) == 0:
+            print 'can\'t plot: ', pileUpFileName
+            return -1
+
+        #number of steps per interval
+        numStepsPerInt = intervalSize/stepSize
+
+        #get the moving average of step intervals
+        (sumsPerInt, threshExceedingCount)  = getMovingAvg(stepSums, numStepsPerInt, intervalSize)
+            
+        #plot sumsPerInt for previous scaffold
+        if threshExceedingCount > 0:
+            scaffPileUpName = os.path.basename(pileUpFileName)
+            createPlot((scaffPileUpName.split('.'))[0], sumsPerInt, numStepsPerInt, plotDir)
             
         return 1
+
     
 
 #get the moving average of step interval
@@ -135,7 +146,7 @@ def getMovingAvg(stepSums, numStepsPerInt, intervalSize, thresholdFlag=100):
                 
 
 #create plot with 'name' and y values in seq
-def createPlot(name, seq, size, numStepsPerInt, plotDir=None):
+def createPlot(name, seq, numStepsPerInt, plotDir=None):
 
     #get the plot directory
     if plotDir is None:
@@ -156,8 +167,8 @@ def createPlot(name, seq, size, numStepsPerInt, plotDir=None):
     figure()
 
     #plot the passed base coverage
-    scatter(map(lambda x:x*numStepsPerInt, range(len(seq))), seq, s=5,\
-                color='tomato')
+    x = map( lambda x:x*numStepsPerInt, range(len(seq)) )
+    scatter( x, seq, s=5, color='tomato')
 
     xmin, xmax = xlim()   # return the current xlim
     xlim(0, xmax)
