@@ -1,6 +1,6 @@
 import sys
 import os
-from scipy.stats import poisson
+import re
 
 class FileExts:
     SORTED_BAM = 'sorted.bam'
@@ -20,7 +20,7 @@ class Programs:
     BCFTOOLS = '/project/huws/huwsgroup/Nitya/SAMtools18/samtools-0.1.18/bcftools/bcftools'
     MAP_QUAL = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_mappingqual2.pl'
     INDEL_INFO = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/add_indelinfo.pl'
-    ANDRE_FISHER = 'matlab -r /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/Andrew_fisher'
+    ANDRE_FISHER = 'matlab -r Andrew_fisher'
     POISSON_VARREAD = 'python /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/fourthSNP.py'
     NUC_CONV = 'perl /project/huws/huwsgroup/mohit/bgicomp/anrewPipe/nucleotideconvertion.pl'
     NUC_CONV_ACID = '/project/huws/huwsgroup/mohit/bgicomp/anrewPipe/Nucleicacid.txt'
@@ -120,8 +120,14 @@ def getAllBAMDirs(ipDir):
 
 def genFirstSNP(ipDir, prefix):
     snps = findAllSNPs(ipDir)
-    #TODO: dont take _?.snp
-    ipSnp = snps[0]
+    
+    for snp in snps:
+        #dont take _?.snp ? -> number
+        m = re.search('_\d.snp$', snp)
+        if m == None:
+            ipSnp = snp
+            break
+            
     cmdstr = ''
     cmdstr += Programs.MAP_QUAL + ' ' + ipSnp + ' '\
         + os.path.join(ipDir, prefix + '.' + FileExts.VCF) + ' '\
@@ -134,7 +140,6 @@ def genSecondSNP(ipDir, prefix):
     secondSNP = os.path.join(ipDir, prefix + '_2' + '.' + FileExts.SNP)
     indels = findAllIndels(ipDir)
     #assuming only one indel
-    #TODO: check
     indel = indels[0]
     cmdStr = ''
     cmdStr += Programs.INDEL_INFO + ' ' + firstSNP +  ' '\
@@ -145,7 +150,21 @@ def genSecondSNP(ipDir, prefix):
 def genThirdSNPByFisher(ipDir, prefix):
     secondSNP = os.path.join(ipDir, prefix + '_2' + '.' + FileExts.SNP)
     thirdSNP = os.path.join(ipDir, prefix + '_3' + '.' + FileExts.SNP)
-    cmdStr = Programs.ANDRE_FISHER + '(' + secondSNP + ',' + thirdSNP + ')'
+    filteredCols = os.path.join(ipDir, prefix + '_filCol')
+    fisherCol = os.path.join(ipDir, prefix + '_fisCol')
+    #get the 16-19 col of second snp
+    cmdStr = ''
+    #run awk to extract desired columns
+    cmdStr += "awk -F'\\t' '{print $16\"\\t\"$17\"\\t\"$18\"\\t\"$19 }' " \
+        + secondSNP + ' > ' + filteredCols + ';'
+    
+    #run fisher on extracted columns
+    cmdStr += Programs.ANDRE_FISHER + '"(\'' + filteredCols + '\',\'' \
+        + fisherCol + '\')"' + ';'
+    
+    #append fisher col to start of file
+    cmdStr += " paste " + fisherCol + " " + secondSNP + " > " + thirdSNP
+    
     return cmdStr
 
 
@@ -171,8 +190,8 @@ def getSixthSNP(ipDir, prefix):
     
 
 def getFinalSNP(ipDir, prefix):
-    sixthSNP = os.path.join(ipDir, prefix + '_6.' + '.' + FileExts.SNP)
-    seventhSNP = os.path.join(ipDir, prefix + '_7.' + '.' + FileExts.SNP)
+    sixthSNP = os.path.join(ipDir, prefix + '_6' + '.' + FileExts.SNP)
+    seventhSNP = os.path.join(ipDir, prefix + '_7' + '.' + FileExts.SNP)
     #assuming only one pileup inside
     pileUp = findAllPileups(ipDir)[0]
     cmdStr = Programs.ADD_READPOS + ' ' +  sixthSNP + ' ' + pileUp + ' ' + seventhSNP
@@ -217,16 +236,16 @@ def getSingleSNPJob(ipDir, lockDir, sequenceName):
     cmdStrs = []
     
     #generate bcf
-    #cmdStrs.append(generateBCF(ipDir, prefix, sequenceName))
+    cmdStrs.append(generateBCF(ipDir, prefix, sequenceName))
 
     #generate vcf
-    #cmdStrs.append(generateVCF(ipDir, prefix))
+    cmdStrs.append(generateVCF(ipDir, prefix))
 
     #generate first snp
-    #cmdStrs.append(genFirstSNP(ipDir, prefix))
+    cmdStrs.append(genFirstSNP(ipDir, prefix))
 
     #generate second snp
-    #cmdStrs.append(genSecondSNP(ipDir, prefix))
+    cmdStrs.append(genSecondSNP(ipDir, prefix))
 
     #generate third snp
     cmdStrs.append(genThirdSNPByFisher(ipDir, prefix))
