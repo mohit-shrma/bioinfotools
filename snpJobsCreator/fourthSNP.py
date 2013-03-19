@@ -1,7 +1,7 @@
 import sys
 import os
-from scipy.stats import poisson
-
+#from scipy.stats import poisson
+import myPoisson
 
 def getFourthSNP(ipDir, prefix):
     thirdSNP = os.path.join(ipDir, prefix + '_3' + '.' + FileExts.SNP)
@@ -19,8 +19,8 @@ def getFourthSNP(ipDir, prefix):
                         break
                 
                 varReads =  float(cols[7])
-                poissonCDF = 1-poisson.cdf(varReads - 1, dpVal*0.01)
-
+                #poissonCDF = 1-poisson.cdf(varReads - 1, dpVal*0.01)
+                poissonCDF = 1-myPoisson.cdf(varReads - 1, dpVal*0.01)
                 cols.insert(0, str(poissonCDF))
                 fourthSNPFile.write('\t'.join(cols) + '\n')
 
