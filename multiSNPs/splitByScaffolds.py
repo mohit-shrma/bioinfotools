@@ -11,6 +11,7 @@ def splitByScaff(ipFileName, opDir, scaffColInd, delim=None):
         prevScaffName = ''
         scaffFile = None
         scaffFileWriter = None
+        scaffDirPath = None
         fileExt = ipFileName.split('.')[-1]
         for row in ipFileReader:
             scaffName = row[scaffColInd]
@@ -18,9 +19,13 @@ def splitByScaff(ipFileName, opDir, scaffColInd, delim=None):
                 #close prev file
                 if scaffFile is not None:
                     scaffFile.close()
+                #create new dir
+                scaffDirPath = os.path.join(opDir, scaffName)
+                if not os.path.isdir(scaffDirPath):
+                    os.mkdir(scaffDirPath)
                 #open new file
                 scaffFile = open(\
-                    os.path.join(opDir, scaffName + '.' + fileExt), 'w')
+                    os.path.join(scaffDirPath, scaffName + '.' + fileExt), 'w')
                 scaffFileWriter = csv.writer(scaffFile, delimiter=delim)
             scaffFileWriter.writerow(row)
                 
