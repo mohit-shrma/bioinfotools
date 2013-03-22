@@ -26,8 +26,8 @@ def splitByScaff(ipFileName, opDir, scaffColInd, delim=None):
                 #open new file
                 scaffFile = open(\
                     os.path.join(scaffDirPath, scaffName + '.' + fileExt), 'w')
-                scaffFileWriter = csv.writer(scaffFile, delimiter=delim)
-            scaffFileWriter.writerow(row)
+                prevScaffName = scaffName
+            scaffFile.write('\t'.join(row) + '\n')
                 
 
 
