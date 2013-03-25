@@ -102,7 +102,8 @@ def getPromotersFromPredicter(predictionFileName, allScaffoldFileName,\
                         
                     elif endBases.lower() == 'cat':
                         #find the promoter end
-                        promoterEnd = end + PredictionFileConsts.PROM_LENGTH +1
+                        #TODO: +1 was not necessary, hence removed verify
+                        promoterEnd = end + PredictionFileConsts.PROM_LENGTH
                         if promoterEnd > len(currScaffBases) -1:
                             #exceeded the length of current bases
                             if end < len(currScaffBases) -1:
