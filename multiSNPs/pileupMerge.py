@@ -94,8 +94,13 @@ def mergePileup(fileName1, fileName2, mergeOpFileName):
                         scaff1Num = int(scaff1.lstrip('s'))
                         if scaff1 == scaff2:
                             #print scaff1, ind1, cov1, scaff2, ind2, cov2
-                            mergeOpFile.write('\t'.join(map(str, [scaff1, ind1,\
-                                             cov1, scaff2, ind2, cov2])) + '\n')
+                            #NOTE: scaffold name same but base index may nt be same
+
+                            pileupFile1.seek(-1*len(p1), os.SEEK_CUR)
+                            pileupFile2.seek(-1*len(p2), os.SEEK_CUR)
+
+                            #mergeOpFile.write('\t'.join(map(str, [scaff1, ind1,\
+                            #                 cov1, scaff2, ind2, cov2])) + '\n')
                             break
 
                 if scaff1Num > scaff2Num:
@@ -113,8 +118,14 @@ def mergePileup(fileName1, fileName2, mergeOpFileName):
                         scaff2Num = int(scaff2.lstrip('s'))
                         if scaff1 == scaff2:
                             #print scaff1, ind1, cov1, scaff2, ind2, cov2
-                            mergeOpFile.write('\t'.join(map(str, [scaff1, ind1,\
-                                             cov1, scaff2, ind2, cov2])) + '\n')
+                            #NOTE: scaffold name same but base index may nt be same
+                            #hence go back and wait for next iter to take care
+
+                            pileupFile1.seek(-1*len(p1), os.SEEK_CUR)
+                            pileupFile2.seek(-1*len(p2), os.SEEK_CUR)
+
+                            #mergeOpFile.write('\t'.join(map(str, [scaff1, ind1,\
+                            #                 cov1, scaff2, ind2, cov2])) + '\n')
                             break
             
             if len(p1) == 0 or len(p2) == 0:
