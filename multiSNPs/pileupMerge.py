@@ -113,6 +113,8 @@ def mergePileup(fileName1, fileName2, mergeOpFileName):
                         scaff2Num = int(scaff2.lstrip('s'))
                         if scaff1 == scaff2:
                             #print scaff1, ind1, cov1, scaff2, ind2, cov2
+                            mergeOpFile.write('\t'.join(map(str, [scaff1, ind1,\
+                                             cov1, scaff2, ind2, cov2])) + '\n')
                             break
             
             if len(p1) == 0 or len(p2) == 0:
