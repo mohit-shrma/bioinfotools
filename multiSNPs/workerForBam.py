@@ -31,7 +31,7 @@ def getFastqFilePaths(fastqDir):
     for fileName in os.listdir(fastqDir):
             fastqPath = os.path.join(fastqDir, fileName)
             if os.path.isfile(fastqPath) and\
-                    fileName.endswith('fastq'):
+                    (fileName.endswith('fastq') or fileName.endswith('fasta')):
                 fastqFilePaths.append(fastqPath)
     return fastqFilePaths
 
@@ -228,7 +228,7 @@ def writeJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools):
                    + "; ")
 
     #convert to sorted bam
-    jobsFile.write(tools['SAMTOOLS'] +" sort "\
+    jobsFile.write(tools['SAMTOOLS'] +" sort -m 2000000000 "\
                    + " " + fastaDir + fastQFileName  + extensions['UNIQ_BAM_EXT']\
                    + " " + fastaDir + fastQFileName + extensions['UNIQ_SORT_BAM_EXT']\
                    + " ")
@@ -249,7 +249,8 @@ def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools
     fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
 
     #fasta file name
-    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+    fastaFileName = (fastaFilePath.split('/')[-1])
+    fastaFileName = fastaFileName[:fastaFileName.index('.')]
 
     #fasta dir
     fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
@@ -283,6 +284,7 @@ def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools
     
     #generate index, do following separately as this is for scaffold,
     #not for read
+    #make sure scaffold or sequence is already indexed
     #jobsFile.write(tools['BWA'] +" index -a bwtsw -p "\
     #                   + fastaFileName + extensions['SCAFF_EXT'] \
     #                   + " " + fastaFilePath + "; ")
@@ -303,8 +305,14 @@ def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools
     samTempPath = samFilePath + '.bak'
     jobsFile.write("mv " + samFilePath + ' ' + samTempPath + "; ")
     
+    #convert temporary sam (.sam.bak) to bam
+    jobsFile.write(tools['SAMTOOLS'] +" view -F4 -bS "\
+                   + " " + samTempPath\
+                   + " > " + fastaDir + fastQFileName + extensions['BAM_EXT']\
+                   + "; ")
+
     #remove 'Ns' or reference '*' in third col
-    jobsFile.write("awk '$3 != \"*\" {print $0} ' " + samTempPath + ' > '\
+    jobsFile.write("awk '$3 != \"*\" && $2 != 4 {print $0} ' " + samTempPath + ' > '\
                            + samFilePath + "; ")
     
     #convert to unique sam with info
@@ -321,7 +329,7 @@ def writeSAIIToBAMJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools
                    + "; ")
 
     #convert to sorted bam
-    jobsFile.write(tools['SAMTOOLS'] +" sort "\
+    jobsFile.write(tools['SAMTOOLS'] +" sort -m 2000000000 "\
                    + " " + fastaDir + fastQFileName  + extensions['UNIQ_BAM_EXT']\
                    + " " + fastaDir + fastQFileName + extensions['UNIQ_SORT_BAM_EXT']\
                    + " ")
@@ -410,6 +418,13 @@ def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
     samTempPath = samFilePath + '.bak'
     jobsFile.write("mv " + samFilePath + ' ' + samTempPath + ";")
     
+    #convert temporary sam (.sam.bak) to bam
+    jobsFile.write(tools['SAMTOOLS'] +" view -F4 -bS "\
+                   + " " + samTempPath\
+                   + " > " + fastaDir + pairName + extensions['BAM_EXT']\
+                   + "; ")
+
+
     #remove 'Ns' or reference '*' in third col
     jobsFile.write("awk '$3 != \"*\" {print $0} ' " + samTempPath + ' > '\
                            + samFilePath + ";")
@@ -421,7 +436,7 @@ def writePairedSAIToBAMJob(jobsFile, fastaFilePath, pairedReadTuple,\
                    + "; ")
 
     #convert to sorted bam
-    jobsFile.write(tools['SAMTOOLS'] +" sort "\
+    jobsFile.write(tools['SAMTOOLS'] +" sort -m 2000000000 "\
                    + " " + fastaDir + pairName  + extensions['BAM_EXT']\
                    + " " + fastaDir + pairName + extensions['SORT_BAM_EXT']\
                    + " ")
@@ -462,8 +477,9 @@ def writeSerialSAIJob(jobsFile, fastaFilePath, fastQFilePath, tools,\
     #write statements for processing job
 
     #change directory to scaffold where we are working
-    jobsFile.write("cd "+ fastaDir+"; ")
-
+    jobsFile.write("cd "+ fastaDir)
+    jobsFile.write("\n")
+    
     #Burrow wheel aligner processing
     
     #generate index, do following separately as this is for scaffold,
@@ -480,6 +496,7 @@ def writeSerialSAIJob(jobsFile, fastaFilePath, fastQFilePath, tools,\
                        + fastQFileName+extensions['SAI_EXT'] +" ")
 
 
+    jobsFile.write("\necho \""+ fastQFileName +"\" \n")
     jobsFile.write("\n")
 
 
@@ -494,7 +511,9 @@ def writeSAIJob(jobsFile, fastaFilePath, fastQFilePath, lockDirPath, tools,\
     fastQFileName = (fastQFilePath.split('/')[-1]).rstrip(extensions['FASTQ_EXT'])
 
     #fasta file name
-    fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+    #fastaFileName = (fastaFilePath.split('/')[-1]).rstrip(extensions['SCAFF_EXT'])
+    fastaFileName = (fastaFilePath.split('/')[-1])
+    fastaFileName = fastaFileName[:fastaFileName.index('.')]
 
     #fasta dir
     fastaDir = '/'.join(fastaFilePath.split('/')[:-1]) + '/'
@@ -631,7 +650,7 @@ def execPairedSAIIToBAMJob(fastaFilePath, pairedReadTuple):
         print 'BAM File creation success: ', fastaDir, pairName
     
     #convert to sorted bam
-    ret = callShellCmd(tools['SAMTOOLS'] +" sort "\
+    ret = callShellCmd(tools['SAMTOOLS'] +" sort -m 2000000000 "\
                    + " " + fastaDir + pairName  + extensions['BAM_EXT']\
                    + " " + fastaDir + pairName + extensions['SORT_BAM_EXT'])
     if ret != 1:
@@ -727,7 +746,7 @@ def execSAIIToBAMJob(fastaFilePath, fastQFilePath):
     
 
     #convert to sorted bam
-    ret = callShellCmd(tools['SAMTOOLS'] +" sort "\
+    ret = callShellCmd(tools['SAMTOOLS'] +" sort -m 2000000000 "\
                    + " " + os.path.join(fastaDir, fastQFileName  + extensions['UNIQ_BAM_EXT'])\
                    + " " + os.path.join(fastaDir, fastQFileName + extensions['UNIQ_SORT_BAM_EXT']))
     if ret != 1:

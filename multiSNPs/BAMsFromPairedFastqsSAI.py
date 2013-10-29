@@ -136,8 +136,8 @@ def main():
                                                         lockDirPath)
 
         #call workers to generate paired BAMs from SAIs
-        results = callPairedSAIToBAMWorkers(fastqsDir, fastaDir)
-        print results
+        #results = callPairedSAIToBAMWorkers(fastqsDir, fastaDir)
+        #print results
 
     else:
         print 'err: files missing'

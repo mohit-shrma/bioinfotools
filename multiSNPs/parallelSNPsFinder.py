@@ -1,5 +1,6 @@
 import os
 import sys
+
 from subprocess import call
 
 import workerForBam
@@ -183,6 +184,29 @@ def snpsFinder(fastaPath, outDir, lockDirPath):
     return 1
 
 
+def main():
+
+    if len(sys.argv) >= 4:
+        #directory containing fastq library
+        fastqsDir = workerForBam.getAbsPath(sys.argv[1])
         
+        #directory containing other directories with fasta names
+        fastaDir = workerForBam.getAbsPath(sys.argv[2])
+
+        #directory containing file locks
+        lockDirPath = workerForBam.getAbsPath(sys.argv[3])
         
+        #directory containing temp output -> fastQ's, jobsFile 
+        outDir = workerForBam.getAbsPath(sys.argv[4])
+        
+        #now for all scaffolds combined bams and look for SNPs
+        snpsFinder(fastaDir, outDir, lockDirPath)
+        
+    else:
+        print 'err: files missing'
+
+
+if __name__ == '__main__':
+    main()
+
 

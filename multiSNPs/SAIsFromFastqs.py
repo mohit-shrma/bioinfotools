@@ -97,9 +97,9 @@ def main():
 
         #call workers to generate SAIs
         #TODO: take number of threads as args
-        results = callSAIWorkers(fastqsDir, fastaDir, numThreads)
+        #results = callSAIWorkers(fastqsDir, fastaDir, numThreads)
 
-        print results
+        #print results
         
     else:
         print 'err: files missing'

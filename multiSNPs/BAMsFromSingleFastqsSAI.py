@@ -38,7 +38,7 @@ def callSAIToBAMWorker((fastaFilePath, fastQFilePath)):
 
 
 
-def callSAIToBAMWorkers(fastqDir, fastaPath):
+def callSAIToBAMWorkers(fastqDir, fastaPath, numProcs = 0):
 
     print 'callSAIToBAMWorkers'
 
@@ -52,8 +52,9 @@ def callSAIToBAMWorkers(fastqDir, fastaPath):
     print 'fastqFilePaths: ', fastqFilePaths
 
     #get number of processors
-    numProcs = multiprocessing.cpu_count()
-    print 'number of cpus: ', numProcs
+    if numProcs == 0:
+        numProcs = multiprocessing.cpu_count()
+        print 'number of cpus: ', numProcs
 
     #compute number of jobs
     numJobs = len(fastqFilePaths)*len(fastaFilePaths)
@@ -92,18 +93,25 @@ def main():
         #directory containing temp output -> fastQ's, jobsFile 
         outDir = workerForBam.getAbsPath(sys.argv[4])
 
+        if len(sys.argv) >= 5:
+            #num of cores that can be used
+            numProcs = int(sys.argv[5])
+        else:
+            numProcs = 0
+            
         #write all fastq's processing in job file
         combineJobPath = writeCombineBAMJobsFromSAI(outDir, fastqsDir,\
                                                         fastaDir,\
                                                         lockDirPath)
 
         #call workers to generate BAMs from SAIs
-        results = callSAIToBAMWorkers(fastqsDir, fastaDir)
-        print results
+        #results = callSAIToBAMWorkers(fastqsDir, fastaDir, numProcs)
+        #print results
         
     else:
         print 'err: files missing'
 
+        
 if __name__ == '__main__':
     main()
 
