@@ -5,8 +5,13 @@ import os
 
 
 def getGenomeCov(bamFileName, genomeFileName, geneCovFileName):
+    print 'Creating bed... ', bamFileName
     bamBed = pybedtools.BedTool(bamFileName)
+    
+    print 'Getting genome coverage...'
     genomeCov = bamBed.genome_coverage(genome=genomeFileName, d=True)
+
+    print 'Saving genome coverage...'
     genomeCov.saveas(geneCovFileName, trackline='track name= "bam and gene"')
     
 

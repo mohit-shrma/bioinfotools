@@ -6,6 +6,7 @@ from pylab import *
 from multiprocessing import Pool
 import multiprocessing, logging
 from array import array
+import math
 
 class Pileup_Consts:
     SCAFF_NAME = 0
@@ -115,7 +116,8 @@ def plotPileups((pileUpFileName, intervalSize, stepSize, plotDir)):
     
 
 #get the moving average of step interval
-def getMovingAvg(stepSums, numStepsPerInt, intervalSize, thresholdFlag=100): 
+def getMovingAvg(stepSums, numStepsPerInt, intervalSize, \
+                     loThresh=20, hiThresh=100): 
     
     threshExceedingCount = 0
 
@@ -133,7 +135,7 @@ def getMovingAvg(stepSums, numStepsPerInt, intervalSize, thresholdFlag=100):
             #got last step of the interval
             sumsPerInt.append(float(currIntSum)/intervalSize)
             #added sum exceeding threshold
-            if (sumsPerInt[-1] > thresholdFlag):
+            if (sumsPerInt[-1] < loThresh or sumsPerInt[-1] > hiThresh):
                threshExceedingCount += 1
             currIntSum -= stepSums[i + 1 - numStepsPerInt]
             stepCount = 1
@@ -146,7 +148,7 @@ def getMovingAvg(stepSums, numStepsPerInt, intervalSize, thresholdFlag=100):
                 
 
 #create plot with 'name' and y values in seq
-def createPlot(name, seq, numStepsPerInt, plotDir=None):
+def createPlot(name, seq, numStepsPerInt, plotDir=None, yMax=None, yMin=None):
 
     #get the plot directory
     if plotDir is None:
@@ -158,7 +160,7 @@ def createPlot(name, seq, numStepsPerInt, plotDir=None):
     else:
         plotDir = os.path.abspath(plotDir)
 
-    print 'plotting... ', name
+    print 'plotting... ', name, yMin, yMax
 
     #initialize py plot for non interactive backend
     matplotlib.use('Agg')
@@ -168,10 +170,16 @@ def createPlot(name, seq, numStepsPerInt, plotDir=None):
 
     #plot the passed base coverage
     x = map( lambda x:x*numStepsPerInt, range(len(seq)) )
-    scatter( x, seq, s=5, color='tomato')
+    #log transform seq
+    logTransSeq = map(math.log, seq)
+    #scatter( x, seq, s=5, color='tomato')
+    scatter( x, logTransSeq, s=5, color='tomato')
 
     xmin, xmax = xlim()   # return the current xlim
     xlim(0, xmax)
+    if yMax is None or yMin is None:
+        ylim(-25, 300) 
+    ylim(yMin, yMax)
     
     #save figure
     savefig(os.path.join(plotDir, name + '.png'))    

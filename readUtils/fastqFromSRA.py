@@ -11,7 +11,7 @@ from subprocess import CalledProcessError
 
 """ get all reads ending with .lite.sra"""
 def getReads(readsDir):
-    readsExt = ".lite.sra" 
+    readsExt = ".sra" 
     dirContents = os.listdir(readsDir)
     reads = []
     for name in dirContents:
@@ -49,7 +49,7 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
     libName = getLibraryName(readLibraryPath)
     retcode = -99
     try:
-        retcode = call(fastQDumpCmd + " -A " + libName
+        retcode = call(fastQDumpCmd + " --split-3 -A " + libName
                        + " -O " + outDir + " " +  readLibraryPath,
                        shell=True)
         #retcode = 0               
@@ -70,19 +70,19 @@ def generateFastQ(readLibraryPath, outDir, fastQDumpCmd):
 """ convert passed sra into fastq"""
 def callFastQConverter((sraDir, sraRead)):
     
-    fastqDumpCmd = "/home/koronis/mohit/programs/sratoolkit.2.1.0-ubuntu32/fastq-dump" 
+    fastqDumpCmd = "/home/koronis/mohit/programs/sratoolkit.2.3.3-4-ubuntu64/bin/fastq-dump" 
     libraryPath = os.path.join(sraDir, sraRead)
     return generateFastQ(libraryPath, sraDir, fastqDumpCmd)
 
 
 """ convert sra in dir to fastq  """
-def callFastqConverterWorkers(sraDir):
+def callFastqConverterWorkers(sraDir, numProcs):
     #contain all sra reads which needs to convert
     sraReads = getReads(sraDir)
     print sraReads
     
     #get number of processors
-    numProcs = multiprocessing.cpu_count()
+    #numProcs = multiprocessing.cpu_count()
     print 'number of cpus: ', numProcs
 
     #compute number of jobs
@@ -108,12 +108,15 @@ def main():
     logger = multiprocessing.log_to_stderr()
     logger.setLevel(multiprocessing.SUBDEBUG)
 
-    if len(sys.argv) >= 1:
+    if len(sys.argv) >= 2:
         #directory containing sra library
         sraDir = sys.argv[1]
-        
+
+        #number of processes
+        numProcs = int(sys.argv[2])
+
         #call workers to generate fastq's
-        results = callFastqConverterWorkers(sraDir)
+        results = callFastqConverterWorkers(sraDir, numProcs)
 
         print results
         

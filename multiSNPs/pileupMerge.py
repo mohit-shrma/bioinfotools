@@ -5,7 +5,7 @@ def getIndNCov(line):
     cols = line.rstrip().split()
     scaff = (cols[0])
     ind = int(cols[1])
-    cov = (cols[2])
+    cov = (cols[3])
     return (scaff, ind, cov)
 
 
@@ -77,8 +77,8 @@ def mergePileup(fileName1, fileName2, mergeOpFileName):
                             break
             
             if scaff1 != scaff2:
-                scaff1Num = int(scaff1.lstrip('s'))
-                scaff2Num = int(scaff2.lstrip('s'))
+                scaff1Num = int(scaff1.lstrip('CGS'))
+                scaff2Num = int(scaff2.lstrip('CGS'))
                 if scaff1Num < scaff2Num:
                     #first is behind second
 
@@ -91,7 +91,7 @@ def mergePileup(fileName1, fileName2, mergeOpFileName):
                         if len(p1) == 0:
                             break
                         (scaff1, ind1, cov1) = getIndNCov(p1)
-                        scaff1Num = int(scaff1.lstrip('s'))
+                        scaff1Num = int(scaff1.lstrip('CGS'))
                         if scaff1 == scaff2:
                             #print scaff1, ind1, cov1, scaff2, ind2, cov2
                             #NOTE: scaffold name same but base index may nt be same
@@ -115,7 +115,7 @@ def mergePileup(fileName1, fileName2, mergeOpFileName):
                         if len(p2) == 0:
                             break
                         (scaff2, ind2, cov2) = getIndNCov(p2)
-                        scaff2Num = int(scaff2.lstrip('s'))
+                        scaff2Num = int(scaff2.lstrip('CGS'))
                         if scaff1 == scaff2:
                             #print scaff1, ind1, cov1, scaff2, ind2, cov2
                             #NOTE: scaffold name same but base index may nt be same

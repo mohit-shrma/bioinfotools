@@ -7,7 +7,7 @@ import multiprocessing, logging
 
 class FASTQ_CONSTS:
     #FASTQ file extension
-    FASTQ_EXT = '.fastq'
+    FASTQ_EXT = '.fasta'
 
     #First dir prefix
     READ1_PRE = '/1'
@@ -24,7 +24,7 @@ def getFastqFilePaths(fastqDir):
     for fileName in os.listdir(fastqDir):
             fastqPath = os.path.join(fastqDir, fileName)
             if os.path.isfile(fastqPath) and\
-                    fileName.endswith('fastq'):
+                    fileName.endswith(FASTQ_CONSTS.FASTQ_EXT):
                 fastqFilePaths.append(fastqPath)
     return fastqFilePaths
 
@@ -59,18 +59,26 @@ def readSplitter((ipReadName, read1OpName, read2OpName)):
 def callReadSplitters(ipReadsDir):
 
     #get all reads
-    dirContents = os.listdir(ipReadsDir)
+    #dirContents = os.listdir(ipReadsDir)
+
+    reads = getFastqFilePaths(ipReadsDir)
 
     #initialize pool with number of possible jobs
-    pool = Pool(processes=len(dirContents))
+    pool = Pool(processes=len(reads))
     workersArgs = []
 
+    for read in reads:
+        readName = read.rstrip(FASTQ_CONSTS.FASTQ_EXT)
+        opRead1 = os.path.join(ipReadsDir, readName + '_1' + FASTQ_CONSTS.FASTQ_EXT)
+        opRead2 = os.path.join(ipReadsDir, readName + '_2' + FASTQ_CONSTS.FASTQ_EXT)
+        workersArgs.append((read, opRead1, opRead2))
+        
     #for each read and fasta create a job
-    for read in dirContents:
+    """for read in dirContents:
         ipRead = os.path.join(ipReadsDir, read)
         opRead1 = os.path.join(ipReadsDir, read+'_1.fasta')
         opRead2 = os.path.join(ipReadsDir, read+'_2.fasta')
-        workersArgs.append((ipRead, opRead1, opRead2))
+        workersArgs.append((ipRead, opRead1, opRead2))"""
         
     results = pool.map(readSplitter, workersArgs)
     pool.close()

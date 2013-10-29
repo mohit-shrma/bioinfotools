@@ -26,11 +26,12 @@ def callReadSplitter((fastqPath, splitThreshold)):
 
     
 
-#prepare read splitting of reads in passed dir
-def prepareReadSplittingTasks(ipReadsDir, splitThreshold):
+#execute read splitting of reads in passed dir
+def execReadSplittingTasks(ipReadsDir, splitThreshold):
 
     #get all fastqs
     fastqFilePaths = getFastqFilePaths(ipReadsDir)
+    print 'fastqFilePaths: ', fastqFilePaths 
     
     #get number of processors
     numProcs = multiprocessing.cpu_count()
@@ -64,7 +65,7 @@ def main():
     if argLen >= 2:
         ipReadsDir = sys.argv[1]
         splitThreshold = int(sys.argv[2]) #generally 25Million reads for 5Gb
-        splitReads(ipReadsDir, splitThreshold)
+        execReadSplittingTasks(ipReadsDir, splitThreshold)
     else:
         print 'err: less num of args passed'
 
